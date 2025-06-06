@@ -70,43 +70,6 @@ app.post('/api/participants', async (req, res) => {
   }
 });
 
-// Update participant
-app.put('/api/participants/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name } = req.body;
-    
-    if (!name || name.trim() === '') {
-      res.status(400).json({ error: 'Name is required' });
-      return;
-    }
-
-    console.log('Updating participant:', id, 'with name:', name);
-    
-    const result = await db
-      .updateTable('participants')
-      .set({ name: name.trim() })
-      .where('id', '=', parseInt(id))
-      .returning(['id', 'name', 'created_at', 'order_position'])
-      .executeTakeFirst();
-    
-    if (!result) {
-      res.status(404).json({ error: 'Participant not found' });
-      return;
-    }
-    
-    console.log('Participant updated successfully:', result);
-    res.json(result);
-  } catch (error) {
-    console.error('Error updating participant:', error);
-    if (error.message && error.message.includes('UNIQUE constraint failed')) {
-      res.status(400).json({ error: 'Participant with this name already exists' });
-      return;
-    }
-    res.status(500).json({ error: 'Failed to update participant' });
-  }
-});
-
 // Reorder participants
 app.put('/api/participants/reorder', async (req, res) => {
   try {
@@ -142,6 +105,43 @@ app.put('/api/participants/reorder', async (req, res) => {
   } catch (error) {
     console.error('Error reordering participants:', error);
     res.status(500).json({ error: 'Failed to reorder participants' });
+  }
+});
+
+// Update participant
+app.put('/api/participants/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name || name.trim() === '') {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+
+    console.log('Updating participant:', id, 'with name:', name);
+
+    const result = await db
+      .updateTable('participants')
+      .set({ name: name.trim() })
+      .where('id', '=', parseInt(id))
+      .returning(['id', 'name', 'created_at', 'order_position'])
+      .executeTakeFirst();
+
+    if (!result) {
+      res.status(404).json({ error: 'Participant not found' });
+      return;
+    }
+
+    console.log('Participant updated successfully:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating participant:', error);
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      res.status(400).json({ error: 'Participant with this name already exists' });
+      return;
+    }
+    res.status(500).json({ error: 'Failed to update participant' });
   }
 });
 
