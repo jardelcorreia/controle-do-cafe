@@ -1,0 +1,15 @@
+name: Keep Render Service Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        run: |
+          curl -sS "YOUR_RENDER_SERVICE_URL_HERE" > /dev/null || echo "Ping failed"
+          echo "Ping attempt completed at $(date)"
