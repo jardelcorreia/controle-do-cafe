@@ -240,14 +240,16 @@ app.delete('/api/purchases', async (req, res) => {
   try {
     console.log('Deleting all purchase history');
     
-    const result = await db
+    const results = await db
       .deleteFrom('coffee_purchases')
       .execute();
     
-    console.log('Purchase history deleted successfully. Rows affected:', result.numDeletedRows);
+    const numDeleted = results && results.length > 0 && results[0].numDeletedRows ? BigInt(results[0].numDeletedRows) : BigInt(0);
+
+    console.log('Purchase history deleted successfully. Rows affected:', numDeleted);
     res.json({ 
       message: 'Purchase history deleted successfully', 
-      deletedCount: result.numDeletedRows 
+      deletedCount: numDeleted.toString()
     });
   } catch (error) {
     console.error('Error deleting purchase history:', error);
