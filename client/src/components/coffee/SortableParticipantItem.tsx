@@ -38,6 +38,7 @@ export function SortableParticipantItem({ participant, onUpdate, onDelete }: Sor
         <div
           {...attributes}
           {...listeners}
+          style={{ touchAction: 'none' }} // Added this line
           className="cursor-grab active:cursor-grabbing p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200"
         >
           <GripVertical className="h-4 w-4" />
