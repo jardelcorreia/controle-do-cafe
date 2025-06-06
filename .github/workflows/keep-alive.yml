@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Ping Render Service
         run: |
-          curl -sS "YOUR_RENDER_SERVICE_URL_HERE" > /dev/null || echo "Ping failed"
+          curl -sS "RENDER_SERVICE_URL" > /dev/null || echo "Ping failed"
           echo "Ping attempt completed at $(date)"
