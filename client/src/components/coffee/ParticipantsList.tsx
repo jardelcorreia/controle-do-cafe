@@ -34,16 +34,10 @@ export function ParticipantsList({
     useSensor(PointerSensor, {
       // Require the mouse to move by 5 pixels before activating
       activationConstraint: {
-        distance: 5,
+        distance: 5, // Keep desktop constraint
       },
     }),
-    useSensor(TouchSensor, {
-      // Require a 250ms delay and tolerance of 5px movement before activating
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
+    useSensor(TouchSensor), // TouchSensor without specific activation constraints
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
