@@ -32,6 +32,7 @@ export function ParticipantsList({
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      pointerTypes: ['mouse'], // Added this line
       // Require the mouse to move by 5 pixels before activating
       activationConstraint: {
         distance: 5,
