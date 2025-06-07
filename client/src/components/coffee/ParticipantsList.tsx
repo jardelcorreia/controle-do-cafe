@@ -71,19 +71,26 @@ const sensors = useSensors(
   const handleDragEnd = async (event) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
+    // Ensure 'over' is not null and the item has moved to a different position
+    if (over && active.id !== over.id) {
       const oldIndex = participants.findIndex(p => p.id === active.id);
-      const newIndex = participants.findIndex(p => p.id === over.id);
-      
-      const newOrder = arrayMove(participants, oldIndex, newIndex);
-      const participantIds = newOrder.map(p => p.id);
-      
-      try {
-        await onReorderParticipants(participantIds);
-      } catch (error) {
-        console.error('Error reordering participants:', error);
+      const newIndex = participants.findIndex(p => p.id === over.id); // 'over.id' is now safe
+
+      // Ensure both items were found in the participants array
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(participants, oldIndex, newIndex);
+        const participantIds = newOrder.map(p => p.id);
+
+        try {
+          await onReorderParticipants(participantIds);
+        } catch (error) {
+          // The error is already logged by useCoffeeData,
+          // but you could add more specific UI feedback here if needed.
+          console.error('Caught in ParticipantsList handleDragEnd:', error);
+        }
       }
     }
+    // If 'over' is null or item is dropped in the same place, do nothing.
   };
 
   return (
