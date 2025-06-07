@@ -39,8 +39,8 @@ export function ParticipantsList({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 400,
-        tolerance: 8, // New value
+        delay: 1000, // New value
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
