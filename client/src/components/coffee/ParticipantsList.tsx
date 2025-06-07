@@ -30,24 +30,24 @@ export function ParticipantsList({
   const [newParticipantName, setNewParticipantName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      pointerTypes: ['mouse'], // Added this line
-      // Require the mouse to move by 5 pixels before activating
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 1000, // New value
-        tolerance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    pointerTypes: ['mouse'], // Ensure this is present
+    activationConstraint: {
+      delay: 1000,
+      tolerance: 8,
+    },
+  }),
+  useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 1000,
+      tolerance: 8,
+    },
+  }),
+  useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates,
+  })
+);
 
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
