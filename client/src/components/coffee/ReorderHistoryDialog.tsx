@@ -23,7 +23,7 @@ interface ReorderHistoryEntry {
   new_order: string; // JSON string of participant IDs
 }
 
-interface ReorderHistoryDrawerProps {
+interface ReorderHistoryDialogProps { // Renamed from ReorderHistoryDrawerProps
   children: ReactNode;
   participants: Participant[]; // To map IDs to names
 }
@@ -41,7 +41,7 @@ const mapIdsToNames = (idsJsonString: string, participants: Participant[]): stri
   }
 };
 
-export function ReorderHistoryDrawer({ children, participants }: ReorderHistoryDrawerProps) {
+export function ReorderHistoryDialog({ children, participants }: ReorderHistoryDialogProps) { // Renamed function and prop type
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<ReorderHistoryEntry[]>([]);
   // Note: isLoading and setError states are correctly defined below this in the actual file
