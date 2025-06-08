@@ -101,16 +101,23 @@ app.put('/api/participants/reorder', async (req, res) => {
     
     await Promise.all(updatePromises);
 
-    // Record the reorder history
-    const newOrderJson = JSON.stringify(participantIds);
-    await db
-      .insertInto('reorder_history')
-      .values({
-        timestamp: new Date().toISOString(),
-        old_order: oldOrderJson,
-        new_order: newOrderJson,
-      })
-      .execute();
+    try {
+      // Record the reorder history
+      const newOrderJson = JSON.stringify(participantIds);
+      await db
+        .insertInto('reorder_history')
+        .values({
+          timestamp: new Date().toISOString(),
+          old_order: oldOrderJson,
+          new_order: newOrderJson,
+        })
+        .execute();
+      console.log('Reorder history recorded successfully.');
+    } catch (historyError) {
+      console.error('Failed to record reorder history:', historyError);
+      // Optionally, you could inform the client that history recording failed,
+      // but for now, just logging on the server is fine to keep reordering functional.
+    }
     
     // Fetch updated participants
     const participants = await db
