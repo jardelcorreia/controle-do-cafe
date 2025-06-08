@@ -77,10 +77,8 @@ export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">
-          <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
-        </Button>
+      <DialogTrigger>
+        <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] sm:max-w-[600px]"> {/* Adjusted width for dialog */}
         <DialogHeader>
@@ -116,8 +114,8 @@ export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps
           )}
         </div>
         <DialogFooter>
-          <DialogClose asChild> {/* Added back asChild */}
-            <Button variant="outline">Fechar</Button>
+          <DialogClose>
+            Fechar
           </DialogClose>
         </DialogFooter>
       </DialogContent>
