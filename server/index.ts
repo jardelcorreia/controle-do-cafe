@@ -113,6 +113,26 @@ app.put('/api/participants/reorder', async (req, res) => {
         })
         .execute();
       console.log('Reorder history recorded successfully.');
+
+      // Trim history to last 2 entries
+      const historyIds = await db
+        .selectFrom('reorder_history')
+        .select('id')
+        .orderBy('id', 'desc') // Order by ID descending to get newest first
+        .execute();
+
+      if (historyIds.length > 2) {
+        // Get the ID of the second newest record.
+        // Since they are ordered by id DESC, the second newest is at index 1.
+        const secondNewestId = historyIds[1].id;
+
+        // Delete records older than the second newest (i.e., all records with ID < secondNewestId)
+        await db
+          .deleteFrom('reorder_history')
+          .where('id', '<', secondNewestId)
+          .execute();
+        console.log(`Trimmed reorder history to the last 2 entries. Records older than ID ${secondNewestId} deleted.`);
+      }
     } catch (historyError) {
       console.error('Failed to record reorder history:', historyError);
       // Optionally, you could inform the client that history recording failed,
