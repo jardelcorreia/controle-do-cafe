@@ -24,8 +24,8 @@ interface ReorderHistoryEntry {
 }
 
 interface ReorderHistoryDialogProps { // Renamed from ReorderHistoryDrawerProps
-  children: ReactNode;
   participants: Participant[]; // To map IDs to names
+  // children: ReactNode; // Removed children
 }
 
 const mapIdsToNames = (idsJsonString: string, participants: Participant[]): string => {
@@ -41,7 +41,7 @@ const mapIdsToNames = (idsJsonString: string, participants: Participant[]): stri
   }
 };
 
-export function ReorderHistoryDialog({ children, participants }: ReorderHistoryDialogProps) { // Renamed function and prop type
+export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps) { // Removed children, Renamed function and prop type
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<ReorderHistoryEntry[]>([]);
   // Note: isLoading and setError states are correctly defined below this in the actual file
@@ -76,7 +76,9 @@ export function ReorderHistoryDialog({ children, participants }: ReorderHistoryD
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger> {/* Added back asChild */}
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">H</Button>
+      </DialogTrigger>
       <DialogContent className="max-h-[80vh] sm:max-w-[600px]"> {/* Adjusted width for dialog */}
         <DialogHeader>
           <DialogTitle>Histórico de Reordenação</DialogTitle>

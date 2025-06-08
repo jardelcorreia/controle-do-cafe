@@ -101,11 +101,7 @@ const sensors = useSensors(
             <Users className="h-5 w-5" />
             Participantes ({participants.length})
           </CardTitle>
-          <ReorderHistoryDialog participants={participants}> {/* Changed from ReorderHistoryDrawer */}
-            <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">
-              H
-            </Button>
-          </ReorderHistoryDialog>
+          <ReorderHistoryDialog participants={participants} /> {/* Made self-closing */}
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1"> {/* Added mt-1 for spacing */}
           <Info className="h-4 w-4" />
