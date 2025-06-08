@@ -32,15 +32,14 @@ export function ParticipantsList({
   
 const sensors = useSensors(
   useSensor(PointerSensor, {
-    pointerTypes: ['mouse'], // Ensures this only handles mouse
     activationConstraint: {
-      distance: 5, // Mouse activates after 5px drag (no delay)
+      distance: 85, // Requer 85px de movimento para ativar
     },
   }),
   useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 1000, // Touch activates after 1s delay
-      tolerance: 10, // with 10px movement tolerance
+      delay: 500, // 500ms (suficiente para diferenciar toque normal)
+      tolerance: 5, // Permite 5px de movimento durante o delay
     },
   }),
   useSensor(KeyboardSensor, {
