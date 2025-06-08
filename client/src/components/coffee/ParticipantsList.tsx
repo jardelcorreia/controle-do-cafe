@@ -103,7 +103,7 @@ const sensors = useSensors(
           </CardTitle>
           <ReorderHistoryDialog participants={participants}> {/* Changed from ReorderHistoryDrawer */}
             <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">
-              <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
+              H
             </Button>
           </ReorderHistoryDialog>
         </div>
