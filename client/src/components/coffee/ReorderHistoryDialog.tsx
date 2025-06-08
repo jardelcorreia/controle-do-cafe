@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'; // Changed from drawer to dialog
 import { Button } from '@/components/ui/button';
+import { History } from 'lucide-react'; // Added History import
 
 interface Participant {
   id: number;
@@ -77,7 +78,9 @@ export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">H</Button>
+        <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">
+          <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] sm:max-w-[600px]"> {/* Adjusted width for dialog */}
         <DialogHeader>
