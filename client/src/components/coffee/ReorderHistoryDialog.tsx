@@ -1,14 +1,14 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'; // Changed from drawer to dialog
 import { Button } from '@/components/ui/button';
 
 interface Participant {
@@ -44,6 +44,7 @@ const mapIdsToNames = (idsJsonString: string, participants: Participant[]): stri
 export function ReorderHistoryDrawer({ children, participants }: ReorderHistoryDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<ReorderHistoryEntry[]>([]);
+  // Note: isLoading and setError states are correctly defined below this in the actual file
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,16 +75,16 @@ export function ReorderHistoryDrawer({ children, participants }: ReorderHistoryD
   }, [isOpen]);
 
   return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger asChild>{children}</DrawerTrigger>
-      <DrawerContent className="max-h-[80vh]">
-        <DrawerHeader>
-          <DrawerTitle>Histórico de Reordenação</DrawerTitle>
-          <DrawerDescription>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-h-[80vh] sm:max-w-[600px]"> {/* Adjusted width for dialog */}
+        <DialogHeader>
+          <DialogTitle>Histórico de Reordenação</DialogTitle>
+          <DialogDescription>
             Veja as alterações anteriores na ordem dos participantes.
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="p-4 overflow-y-auto">
+          </DialogDescription>
+        </DialogHeader>
+        <div className="p-4 overflow-y-auto"> {/* This div handles the scrolling content */}
           {isLoading && <p>Carregando histórico...</p>}
           {error && <p className="text-red-500">Erro: {error}</p>}
           {!isLoading && !error && history.length === 0 && (
@@ -109,12 +110,12 @@ export function ReorderHistoryDrawer({ children, participants }: ReorderHistoryD
             </ul>
           )}
         </div>
-        <DrawerFooter>
-          <DrawerClose asChild>
+        <DialogFooter>
+          <DialogClose asChild>
             <Button variant="outline">Fechar</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
