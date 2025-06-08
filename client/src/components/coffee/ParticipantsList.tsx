@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Plus, Info } from 'lucide-react';
+import { Users, Plus, Info, History } from 'lucide-react'; // Added History
 import { useState } from 'react';
+import { ReorderHistoryDrawer } from './ReorderHistoryDrawer'; // Added ReorderHistoryDrawer
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -19,13 +20,13 @@ interface ParticipantsListProps {
   loading?: boolean;
 }
 
-export function ParticipantsList({ 
-  participants, 
-  onAddParticipant, 
+export function ParticipantsList({
+  participants,
+  onAddParticipant,
   onUpdateParticipant,
   onReorderParticipants,
   onDeleteParticipant,
-  loading 
+  loading
 }: ParticipantsListProps) {
   const [newParticipantName, setNewParticipantName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -95,11 +96,18 @@ const sensors = useSensors(
   return (
     <Card className="card-coffee-accent">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-          <Users className="h-5 w-5" />
-          Participantes ({participants.length})
-        </CardTitle>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex justify-between items-start"> {/* Flex container for title and button */}
+          <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+            <Users className="h-5 w-5" />
+            Participantes ({participants.length})
+          </CardTitle>
+          <ReorderHistoryDrawer participants={participants}>
+            <Button variant="ghost" size="icon" aria-label="Histórico de reordenação">
+              <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
+            </Button>
+          </ReorderHistoryDrawer>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1"> {/* Added mt-1 for spacing */}
           <Info className="h-4 w-4" />
           <span>Arraste para reordenar a sequência de compra</span>
         </div>

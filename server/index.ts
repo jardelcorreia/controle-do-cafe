@@ -81,6 +81,14 @@ app.put('/api/participants/reorder', async (req, res) => {
     }
 
     console.log('Reordering participants:', participantIds);
+
+    // Fetch current order before updating
+    const oldParticipants = await db
+      .selectFrom('participants')
+      .select('id')
+      .orderBy('order_position', 'asc')
+      .execute();
+    const oldOrderJson = JSON.stringify(oldParticipants.map(p => p.id));
     
     // Update order positions for all participants
     const updatePromises = participantIds.map((id, index) =>
@@ -92,6 +100,17 @@ app.put('/api/participants/reorder', async (req, res) => {
     );
     
     await Promise.all(updatePromises);
+
+    // Record the reorder history
+    const newOrderJson = JSON.stringify(participantIds);
+    await db
+      .insertInto('reorder_history')
+      .values({
+        timestamp: new Date().toISOString(),
+        old_order: oldOrderJson,
+        new_order: newOrderJson,
+      })
+      .execute();
     
     // Fetch updated participants
     const participants = await db
@@ -100,10 +119,11 @@ app.put('/api/participants/reorder', async (req, res) => {
       .orderBy('order_position', 'asc')
       .execute();
     
-    console.log('Participants reordered successfully');
+    console.log('Participants reordered successfully and history recorded');
     res.json(participants);
   } catch (error) {
     console.error('Error reordering participants:', error);
+    // It's good practice to also log the specific error if possible, e.g. error.message
     res.status(500).json({ error: 'Failed to reorder participants' });
   }
 });
@@ -206,6 +226,24 @@ app.get('/api/purchases', async (req, res) => {
   } catch (error) {
     console.error('Error fetching purchases:', error);
     res.status(500).json({ error: 'Failed to fetch purchases' });
+  }
+});
+
+// Get reorder history
+app.get('/api/reorder-history', async (req, res) => {
+  try {
+    console.log('Fetching reorder history');
+    const history = await db
+      .selectFrom('reorder_history')
+      .selectAll()
+      .orderBy('timestamp', 'desc')
+      .execute();
+
+    console.log(`Found ${history.length} reorder history entries`);
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching reorder history:', error);
+    res.status(500).json({ error: 'Failed to fetch reorder history' });
   }
 });
 

@@ -1,3 +1,10 @@
+export interface ReorderHistory {
+  id: number; // INTEGER, primary key, auto-incrementing
+  timestamp: string; // TEXT, not null, defaulting to the current timestamp
+  old_order: string; // TEXT (JSON string)
+  new_order: string; // TEXT (JSON string)
+}
+
 export interface DatabaseSchema {
   participants: {
     id: number;
@@ -10,4 +17,5 @@ export interface DatabaseSchema {
     participant_id: number;
     purchase_date: string;
   };
+  reorder_history: ReorderHistory;
 }

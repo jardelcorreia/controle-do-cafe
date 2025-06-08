@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Participant, Purchase, NextBuyerResponse } from '@/types/coffee';
 
+// Define the type for reorder history entries within the hook
+interface ReorderHistoryEntry {
+  id: number;
+  timestamp: string;
+  old_order: string; // JSON string of participant IDs
+  new_order: string; // JSON string of participant IDs
+}
+
 export function useCoffeeData() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [nextBuyer, setNextBuyer] = useState<NextBuyerResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // State for reorder history
+  const [reorderHistory, setReorderHistory] = useState<ReorderHistoryEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [errorHistory, setErrorHistory] = useState<string | null>(null);
 
   const fetchParticipants = async () => {
     try {
@@ -101,6 +114,8 @@ export function useCoffeeData() {
       const updatedParticipants = await response.json();
       setParticipants(updatedParticipants);
       await fetchNextBuyer();
+      // Optionally, refetch history if reordering affects it directly or if desired
+      // await fetchReorderHistory();
     } catch (error) {
       console.error('Error reordering participants:', error);
       throw error;
@@ -182,6 +197,29 @@ export function useCoffeeData() {
     loadData();
   }, []);
 
+  const fetchReorderHistory = async () => {
+    setLoadingHistory(true);
+    setErrorHistory(null);
+    try {
+      const response = await fetch('/api/reorder-history');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to fetch reorder history: ${response.statusText}`);
+      }
+      const data: ReorderHistoryEntry[] = await response.json();
+      setReorderHistory(data);
+    } catch (error) {
+      console.error('Error fetching reorder history:', error);
+      if (error instanceof Error) {
+        setErrorHistory(error.message);
+      } else {
+        setErrorHistory('An unknown error occurred while fetching reorder history.');
+      }
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   return {
     participants,
     purchases,
@@ -197,6 +235,13 @@ export function useCoffeeData() {
       fetchParticipants();
       fetchPurchases();
       fetchNextBuyer();
-    }
+      // Optionally include fetchReorderHistory in general refetch if desired
+      // fetchReorderHistory();
+    },
+    // Expose reorder history data and functions
+    reorderHistory,
+    loadingHistory,
+    errorHistory,
+    fetchReorderHistory,
   };
 }
