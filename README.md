@@ -1,3 +1,8 @@
+# ☕ Coffee Shop - Sistema de Controle e Auditoria do Café
+
+Sistema para controlar a rotação de compra de café entre participantes, com funcionalidade de arrastar e soltar para reordenar a sequência e visualização do histórico de alterações.
+
+## 🚀 Funcionalidades
 
 - ✅ Controle de participantes (Adicionar, Editar, Remover)
 - ✅ Rotação automática de quem deve comprar café, baseada na ordem da lista
