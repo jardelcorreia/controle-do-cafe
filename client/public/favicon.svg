@@ -1,14 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_1007_5605)">
-<path d="M15 6.99915H10.8691L14.2489 3.61978L12.3798 1.75269L8.94488 5.18717V1H6.30233V5.18717L2.86736 1.75269L1 3.61978L5.75624 8.37535L7.6236 6.50826L9.49268 8.37535L7.6236 10.2442L12.3798 14.998L14.2489 13.1309L10.7571 9.6396H15V6.99915Z" fill="#F0A400"></path>
-<path d="M5.75546 8.37705L1 13.1318L2.86856 15.0001L7.62403 10.2454L5.75546 8.37705Z" fill="#6E6B68"></path>
-<path d="M7.62296 6.50719L5.75439 8.37549L7.62296 10.2438L9.49152 8.37549L7.62296 6.50719Z" fill="#FBFAF9"></path>
-</g>
-<defs>
-<clipPath id="SvgjsClipPath1005">
-<rect width="14" height="14" fill="white" transform="translate(1 1)"></rect>
-</clipPath>
-</defs>
-</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#6D4C41">
+  <path d="M80,30H70V20c0-5.5-4.5-10-10-10H40c-5.5,0-10,4.5-10,10V30H20c-5.5,0-10,4.5-10,10V70c0,11,9,20,20,20h40c11,0,20-9,20-20V40C90,34.5,85.5,30,80,30z M40,20h20v10H40V20z M70,80H30c-5.5,0-10-4.5-10-10V50h50v20C70,75.5,65.5,80,70,80z"/>
+  <path d="M50 55c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm15 0c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm-30 0c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5z" fill="#FFFFFF"/>
+  <path d="M85 15c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3zm-10 0c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z" fill="#A1887F"/>
+</svg>
