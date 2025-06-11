@@ -45,7 +45,8 @@ export function CoffeeSystem() {
           size="sm" // Smaller size
           className="absolute top-8 right-4 md:right-8 text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100" // Positioning classes
         >
-          <LogOut className="mr-1 h-4 w-4" /> Sair
+          <LogOut className="sm:mr-1 h-4 w-4" /> {/* Apply margin only on sm screens and up */}
+          <span className="hidden sm:inline">Sair</span> {/* Hide text on small screens */}
         </Button>
 
         {/* Centered Title Group */}
