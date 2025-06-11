@@ -36,7 +36,7 @@ export function CoffeeSystem() {
   return (
     <div className="min-h-screen coffee-pattern">
       <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex justify-between items-center mb-6"> {/* Changed from text-center and added mb-6 */}
+        <div className="flex justify-between items-start mb-6"> {/* items-center to items-start */}
           <div> {/* Added div to keep title and subtitle together */}
             <h1 className="text-4xl font-bold text-amber-900 dark:text-amber-100">
               ☕ Coffee Shop
