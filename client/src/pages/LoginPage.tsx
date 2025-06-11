@@ -30,10 +30,17 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900 p-4">
-      <Card className="w-full max-w-sm">
+    <div
+      className="flex items-center justify-center min-h-screen p-4"
+      style={{
+        backgroundImage: "url('/login-background.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <Card className="w-full max-w-sm bg-white/80 dark:bg-black/70 backdrop-blur-sm"> {/* Added backdrop blur and slight transparency to the card for better readability over the background */}
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-amber-800 dark:text-amber-200">
+          <CardTitle className="text-2xl font-bold text-center text-amber-900 dark:text-amber-100">
             Acesso Restrito
           </CardTitle>
           <CardDescription className="text-center">
