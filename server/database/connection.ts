@@ -34,7 +34,37 @@ sqliteDb.exec(`
     purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (participant_id) REFERENCES participants(id)
   );
+
+  CREATE TABLE IF NOT EXISTS reorder_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, -- Using DATETIME for consistency
+    old_order TEXT,
+    new_order TEXT
+  );
 `);
+
+// Seed initial participants if the table is empty
+try {
+  const participantCountResult = sqliteDb.prepare('SELECT COUNT(*) as count FROM participants').get() as { count: number };
+  if (participantCountResult && participantCountResult.count === 0) {
+    console.log('No participants found, seeding initial data...');
+    const initialParticipants = [
+      { name: 'Werbet', order_position: 1 },
+      { name: 'Phillipe', order_position: 2 },
+      { name: 'Edmilson', order_position: 3 },
+      { name: 'Jardel', order_position: 4 },
+    ];
+    const insertStmt = sqliteDb.prepare('INSERT INTO participants (name, order_position, created_at) VALUES (?, ?, datetime(\'now\'))');
+    sqliteDb.transaction(() => {
+      for (const p of initialParticipants) {
+        insertStmt.run(p.name, p.order_position);
+      }
+    })(); // Immediately invoke the transaction
+    console.log('Initial participants seeded successfully.');
+  }
+} catch (seedError) {
+  console.error('Error seeding initial participants:', seedError);
+}
 
 // Check if we need to add order_position column (for existing databases)
 try {

@@ -1,13 +1,13 @@
 # ☕ Coffee Shop - Sistema de Controle e Auditoria do Café
 
-Sistema para controlar a rotação de compra de café entre participantes, com funcionalidade de arrastar e soltar para reordenar a sequência e visualização do histórico de alterações.
+Sistema para controlar a rotação de compra de café entre participantes, com funcionalidade de reordenar a sequência usando botões e visualização do histórico de alterações.
 
 ## 🚀 Funcionalidades
 
 - ✅ Controle de participantes (Adicionar, Editar, Remover)
 - ✅ Rotação automática de quem deve comprar café, baseada na ordem da lista
 - ✅ Histórico de compras de café
-- ✅ Reordenação da lista de participantes por arrastar e soltar (Drag & Drop)
+- ✅ Reordenação da lista de participantes usando botões de mover para cima/baixo.
 - ✅ **Histórico de Reordenações**: Visualização das duas últimas alterações na ordem da lista de participantes, acessível através de um ícone na seção de participantes.
 - ✅ Limpeza do histórico de compras
 - ✅ Interface responsiva
@@ -17,7 +17,6 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend**: Node.js, Express 5, TypeScript
 - **Database**: SQLite com Kysely ORM
-- **Drag & Drop**: @dnd-kit
 
 ## 📦 Instalação
 
@@ -32,15 +31,7 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
    export DATA_DIRECTORY="./data"
    mkdir -p data
    ```
-   **Observação:** Para a funcionalidade de histórico de reordenações, a tabela `reorder_history` precisa ser criada no banco de dados `data/database.sqlite`. Execute o seguinte comando SQL usando uma ferramenta de sua preferência (ex: `sqlite3 data/database.sqlite`):
-   ```sql
-   CREATE TABLE IF NOT EXISTS reorder_history (
-     id INTEGER PRIMARY KEY AUTOINCREMENT,
-     timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-     old_order TEXT,
-     new_order TEXT
-   );
-   ```
+   **Observação:** O aplicativo inicializará automaticamente as tabelas do banco de dados (`participants`, `coffee_purchases`, `reorder_history`) no arquivo `data/database.sqlite` se elas não existirem. Certifique-se de que o diretório `data` seja gravável pelo processo do aplicativo.
 
 ## 🏃‍♂️ Executar
 
@@ -65,19 +56,19 @@ npm start
 5. Environment Variables:
    - `NODE_ENV=production`
    - `DATA_DIRECTORY=/opt/render/project/data`
-   (Lembre-se de que a tabela `reorder_history` precisará ser criada no banco de dados se você estiver usando um volume persistente, ou a funcionalidade de histórico de reordenações não persistirá dados.)
+   (Certifique-se de que o diretório `/opt/render/project/data` esteja configurado como um disco persistente em seu serviço Render para que os dados do SQLite, incluindo o histórico de reordenações, não sejam perdidos em reinicializações ou deploys.)
 
 ### Railway.app
 1. Conecte o repositório
 2. Deploy automático
-   (Considere a persistência do banco de dados e a criação da tabela `reorder_history`.)
+   (Considere a configuração de um volume persistente para o diretório `data` para garantir a persistência do banco de dados SQLite.)
 
 ### DigitalOcean App Platform
 1. Conecte o repositório
 2. Configure Node.js service
 3. Build: `npm run build`
 4. Run: `npm start`
-   (Considere a persistência do banco de dados e a criação da tabela `reorder_history`.)
+   (Considere a configuração de um disco persistente para o diretório `data` para garantir a persistência do banco de dados SQLite.)
 
 ## 📝 Estrutura do Projeto
 
@@ -88,9 +79,9 @@ npm start
 │   │   ├── hooks/        # Custom hooks
 │   │   └── types/        # TypeScript types
 ├── server/               # Backend Express
-│   ├── database/         # Configuração do banco
+│   ├── database/         # Configuração do banco (incluindo connection.ts que inicializa o schema)
 │   └── static-serve.ts   # Servir arquivos estáticos
-├── data/                 # Banco SQLite (inicialmente vazio, `database.sqlite` é criado aqui)
+├── data/                 # Banco SQLite (inicialmente vazio, `database.sqlite` é criado aqui pelo app)
 └── dist/                 # Build de produção
 ```
 
@@ -120,15 +111,10 @@ npm start
         "old_order": "[3,1,2]",
         "new_order": "[1,2,3]"
       },
-      {
-        "id": 2,
-        "timestamp": "2023-10-27T10:05:00.000Z",
-        "old_order": "[1,2,3]",
-        "new_order": "[2,1,3]"
-      }
+      // ... (mais uma entrada se existir)
     ]
     ```
-    (Retorna array vazio `[]` se não houver histórico ou se a tabela `reorder_history` não existir.)
+    (Retorna array vazio `[]` se não houver histórico.)
 
 
 ## 📄 Licença
