@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import App from './App';
+import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
 
 import './index.css';
 
@@ -16,6 +17,8 @@ darkQuery.addEventListener('change', updateDarkClass);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </React.StrictMode>,
 );

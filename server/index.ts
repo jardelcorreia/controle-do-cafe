@@ -10,6 +10,30 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  const sharedPassword = process.env.APP_SHARED_PASSWORD;
+
+  if (!sharedPassword) {
+    console.error('APP_SHARED_PASSWORD environment variable is not set.');
+    // Avoid disclosing that the password system is misconfigured if possible,
+    // but for now, a generic server error is fine. In a real scenario,
+    // this should be a critical startup failure or a more nuanced response.
+    return res.status(500).json({ error: 'Login system configuration error.' });
+  }
+
+  if (password && password === sharedPassword) {
+    // For a simple shared password system, we don't strictly need a token
+    // if the frontend will just use a flag.
+    // However, sending back a success indicator is good.
+    // A more robust system might issue a short-lived JWT here.
+    res.json({ authenticated: true, message: 'Login successful.' });
+  } else {
+    res.status(401).json({ error: 'Invalid password.' });
+  }
+});
+
 // Get all participants
 app.get('/api/participants', async (req, res) => {
   try {

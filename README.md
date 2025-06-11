@@ -1,6 +1,6 @@
 # ☕ Coffee Shop - Sistema de Controle e Auditoria do Café
 
-Sistema para controlar a rotação de compra de café entre participantes, com funcionalidade de reordenar a sequência usando botões e visualização do histórico de alterações.
+Sistema para controlar a rotação de compra de café entre participantes, com funcionalidade de reordenar a sequência usando botões, visualização do histórico de alterações e acesso restrito por senha.
 
 ## 🚀 Funcionalidades
 
@@ -11,27 +11,35 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 - ✅ **Histórico de Reordenações**: Visualização das duas últimas alterações na ordem da lista de participantes, acessível através de um ícone na seção de participantes.
 - ✅ Limpeza do histórico de compras
 - ✅ Interface responsiva
+- ✅ Sistema de login com senha compartilhada para acesso restrito.
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Router DOM
 - **Backend**: Node.js, Express 5, TypeScript
 - **Database**: SQLite com Kysely ORM
 
-## 📦 Instalação
+## 📦 Instalação e Configuração
 
-1. Clone o repositório
-2. Instale as dependências:
-   ```bash
-   npm install
-   ```
+1.  Clone o repositório
+2.  Instale as dependências:
+    ```bash
+    npm install
+    ```
+3.  Configure o diretório de dados:
+    ```bash
+    export DATA_DIRECTORY="./data" # Ou defina no seu ambiente
+    mkdir -p data
+    ```
+    **Observação:** O aplicativo inicializará automaticamente as tabelas do banco de dados (`participants`, `coffee_purchases`, `reorder_history`) no arquivo `data/database.sqlite` se elas não existirem. Certifique-se de que o diretório `data` seja gravável.
 
-3. Configure o ambiente:
-   ```bash
-   export DATA_DIRECTORY="./data"
-   mkdir -p data
-   ```
-   **Observação:** O aplicativo inicializará automaticamente as tabelas do banco de dados (`participants`, `coffee_purchases`, `reorder_history`) no arquivo `data/database.sqlite` se elas não existirem. Certifique-se de que o diretório `data` seja gravável pelo processo do aplicativo.
+4.  Configure a senha compartilhada para o login (para desenvolvimento local):
+    - Crie um arquivo `.env` na raiz do projeto (ao lado de `package.json`).
+    - Adicione a seguinte linha, substituindo pela senha desejada:
+      ```
+      APP_SHARED_PASSWORD=sua_senha_secreta_aqui
+      ```
+    - **Importante:** Certifique-se de que o arquivo `.env` esteja listado no seu `.gitignore` para não ser commitado.
 
 ## 🏃‍♂️ Executar
 
@@ -39,6 +47,7 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 ```bash
 npm run dev
 ```
+(O servidor backend rodará na porta 3001 e o frontend Vite na porta especificada por ele, geralmente 5173)
 
 ### Produção
 ```bash
@@ -48,35 +57,26 @@ npm start
 
 ## 🌐 Deploy
 
-### Render.com (Recomendado)
-1. Conecte seu repositório GitHub
-2. Configure como "Web Service"
-3. Build Command: `npm run build`
-4. Start Command: `npm start`
-5. Environment Variables:
-   - `NODE_ENV=production`
-   - `DATA_DIRECTORY=/opt/render/project/data`
-   (Certifique-se de que o diretório `/opt/render/project/data` esteja configurado como um disco persistente em seu serviço Render para que os dados do SQLite, incluindo o histórico de reordenações, não sejam perdidos em reinicializações ou deploys.)
+Ao fazer o deploy para plataformas como Render, Railway, ou DigitalOcean App Platform:
 
-### Railway.app
-1. Conecte o repositório
-2. Deploy automático
-   (Considere a configuração de um volume persistente para o diretório `data` para garantir a persistência do banco de dados SQLite.)
+1.  **Build Command**: `npm run build` (ou conforme necessário pela plataforma)
+2.  **Start Command**: `npm start` (ou conforme necessário pela plataforma)
+3.  **Variáveis de Ambiente Essenciais**:
+    - `NODE_ENV=production`
+    - `DATA_DIRECTORY`: Configure um caminho para armazenamento persistente (ex: `/opt/render/project/data` no Render).
+    - `APP_SHARED_PASSWORD`: **Defina a senha compartilhada desejada aqui.** Este é crucial para a funcionalidade de login.
+    - `PORT`: A plataforma geralmente define isso, mas se necessário, configure para a porta que seu serviço deve escutar (ex: 3001 ou 10000).
 
-### DigitalOcean App Platform
-1. Conecte o repositório
-2. Configure Node.js service
-3. Build: `npm run build`
-4. Run: `npm start`
-   (Considere a configuração de um disco persistente para o diretório `data` para garantir a persistência do banco de dados SQLite.)
+    **Nota sobre Persistência de Dados**: É vital configurar um disco/volume persistente para o `DATA_DIRECTORY` em sua plataforma de deploy. Isso garante que o arquivo `database.sqlite` (com todos os dados de participantes, compras e histórico) não seja perdido entre deploys ou reinicializações do serviço.
 
 ## 📝 Estrutura do Projeto
-
 ```
 ├── client/               # Frontend React
 │   ├── src/
 │   │   ├── components/   # Componentes React
+│   │   ├── contexts/     # React Contexts (ex: AuthContext)
 │   │   ├── hooks/        # Custom hooks
+│   │   ├── pages/        # Componentes de página (ex: LoginPage)
 │   │   └── types/        # TypeScript types
 ├── server/               # Backend Express
 │   ├── database/         # Configuração do banco (incluindo connection.ts que inicializa o schema)
@@ -87,6 +87,10 @@ npm start
 
 ## 🎯 API Endpoints
 
+- `POST /api/login` - Autentica o usuário.
+  - Body: `{ "password": "string" }`
+  - Response (Success): `{ "authenticated": true, "message": "Login successful." }`
+  - Response (Failure): 401 Unauthorized `{ "error": "Invalid password." }`
 - `GET /api/participants` - Lista participantes ordenados.
 - `POST /api/participants` - Adiciona novo participante ao final da lista.
   - Body: `{ "name": "string" }`
@@ -102,19 +106,7 @@ npm start
 - `DELETE /api/purchases` - Limpa todo o histórico de compras.
 - `GET /api/next-buyer` - Retorna o próximo participante a comprar café e a última compra.
 - `GET /api/reorder-history` - Retorna as duas últimas reordenações da lista de participantes.
-  - Exemplo de resposta:
-    ```json
-    [
-      {
-        "id": 1,
-        "timestamp": "2023-10-27T10:00:00.000Z",
-        "old_order": "[3,1,2]",
-        "new_order": "[1,2,3]"
-      },
-      // ... (mais uma entrada se existir)
-    ]
-    ```
-    (Retorna array vazio `[]` se não houver histórico.)
+  - (Retorna array vazio `[]` se não houver histórico.)
 
 
 ## 📄 Licença
