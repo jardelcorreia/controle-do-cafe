@@ -4,12 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Plus, Info, History } from 'lucide-react';
 import { useState } from 'react';
-import { ReorderHistoryDialog } from './ReorderHistoryDialog'; // Changed from ReorderHistoryDrawer
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { ReorderHistoryDialog } from './ReorderHistoryDialog';
+// Removed DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors from '@dnd-kit/core'
+// Removed arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy from '@dnd-kit/sortable'
+// Removed restrictToVerticalAxis from '@dnd-kit/modifiers'
 import { Participant } from '@/types/coffee';
-import { SortableParticipantItem } from './SortableParticipantItem';
+import { ParticipantItem } from './ParticipantItem'; // Changed from SortableParticipantItem
 
 interface ParticipantsListProps {
   participants: Participant[];
@@ -31,22 +31,7 @@ export function ParticipantsList({
   const [newParticipantName, setNewParticipantName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   
-const sensors = useSensors(
-  useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 85, // Requer 85px de movimento para ativar
-    },
-  }),
-  useSensor(TouchSensor, {
-    activationConstraint: {
-      delay: 500, // 500ms (suficiente para diferenciar toque normal)
-      tolerance: 5, // Permite 5px de movimento durante o delay
-    },
-  }),
-  useSensor(KeyboardSensor, {
-    coordinateGetter: sortableKeyboardCoordinates,
-  })
-);
+  // Removed sensors constant and useSensors call
 
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
@@ -68,44 +53,57 @@ const sensors = useSensors(
     }
   };
 
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
+  // Removed handleDragEnd function
 
-    // Ensure 'over' is not null and the item has moved to a different position
-    if (over && active.id !== over.id) {
-      const oldIndex = participants.findIndex(p => p.id === active.id);
-      const newIndex = participants.findIndex(p => p.id === over.id); // 'over.id' is now safe
+  const handleMoveUp = async (participantId: number) => {
+    const index = participants.findIndex(p => p.id === participantId);
+    if (index > 0) { // Can't move up if already at the top
+      const newParticipantsArray = [...participants];
+      const temp = newParticipantsArray[index];
+      newParticipantsArray[index] = newParticipantsArray[index - 1];
+      newParticipantsArray[index - 1] = temp;
 
-      // Ensure both items were found in the participants array
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(participants, oldIndex, newIndex);
-        const participantIds = newOrder.map(p => p.id);
-
-        try {
-          await onReorderParticipants(participantIds);
-        } catch (error) {
-          // The error is already logged by useCoffeeData,
-          // but you could add more specific UI feedback here if needed.
-          console.error('Caught in ParticipantsList handleDragEnd:', error);
-        }
+      const newParticipantIds = newParticipantsArray.map(p => p.id);
+      try {
+        await onReorderParticipants(newParticipantIds);
+      } catch (error) {
+        console.error('Error moving participant up:', error);
+        // Consider adding user-facing error feedback if needed
       }
     }
-    // If 'over' is null or item is dropped in the same place, do nothing.
+  };
+
+  const handleMoveDown = async (participantId: number) => {
+    const index = participants.findIndex(p => p.id === participantId);
+    if (index < participants.length - 1 && index !== -1) { // Can't move down if already at the bottom or not found
+      const newParticipantsArray = [...participants];
+      const temp = newParticipantsArray[index];
+      newParticipantsArray[index] = newParticipantsArray[index + 1];
+      newParticipantsArray[index + 1] = temp;
+
+      const newParticipantIds = newParticipantsArray.map(p => p.id);
+      try {
+        await onReorderParticipants(newParticipantIds);
+      } catch (error) {
+        console.error('Error moving participant down:', error);
+        // Consider adding user-facing error feedback if needed
+      }
+    }
   };
 
   return (
     <Card className="card-coffee-accent">
       <CardHeader>
-        <div className="flex justify-between items-start"> {/* Flex container for title and button */}
+        <div className="flex justify-between items-start">
           <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
             <Users className="h-5 w-5" />
             Participantes ({participants.length})
           </CardTitle>
-          <ReorderHistoryDialog participants={participants} /> {/* Made self-closing */}
+          <ReorderHistoryDialog participants={participants} />
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1"> {/* Added mt-1 for spacing */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
           <Info className="h-4 w-4" />
-          <span>Arraste para reordenar a sequência de compra</span>
+          <span>Use as setas para reordenar a sequência de compra</span> {/* Updated text */}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -134,25 +132,21 @@ const sensors = useSensors(
         {participants.length > 0 ? (
           <div className="space-y-2">
             <Label>Lista de participantes (ordem de compra)</Label>
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext items={participants.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                <div className="grid gap-2">
-                  {participants.map((participant) => (
-                    <SortableParticipantItem
-                      key={participant.id}
-                      participant={participant}
-                      onUpdate={onUpdateParticipant}
-                      onDelete={onDeleteParticipant}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            {/* Removed DndContext and SortableContext wrappers */}
+            <div className="grid gap-2">
+              {participants.map((participant, index) => ( // Added index for isFirst/isLast
+                <ParticipantItem // Changed from SortableParticipantItem
+                  key={participant.id}
+                  participant={participant}
+                  onUpdate={onUpdateParticipant}
+                  onDelete={onDeleteParticipant}
+                  onMoveUp={handleMoveUp} // Added prop
+                  onMoveDown={handleMoveDown} // Added prop
+                  isFirst={index === 0} // Added prop
+                  isLast={index === participants.length - 1} // Added prop
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <p className="text-muted-foreground text-center py-4">

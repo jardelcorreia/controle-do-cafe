@@ -8,7 +8,7 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 - ✅ Rotação automática de quem deve comprar café, baseada na ordem da lista
 - ✅ Histórico de compras de café
 - ✅ Reordenação da lista de participantes por arrastar e soltar (Drag & Drop)
-- ✅ Histórico de Reordenações: Visualização das duas últimas alterações na ordem da lista de participantes, acessível através de um ícone na seção de participantes.
+- ✅ **Histórico de Reordenações**: Visualização das duas últimas alterações na ordem da lista de participantes, acessível através de um ícone na seção de participantes.
 - ✅ Limpeza do histórico de compras
 - ✅ Interface responsiva
 
@@ -134,3 +134,4 @@ npm start
 ## 📄 Licença
 
 MIT License
+```

@@ -34,13 +34,6 @@ sqliteDb.exec(`
     purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (participant_id) REFERENCES participants(id)
   );
-
-   CREATE TABLE IF NOT EXISTS reorder_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    old_order TEXT,
-    new_order TEXT
-  );
 `);
 
 // Check if we need to add order_position column (for existing databases)
@@ -54,10 +47,7 @@ try {
     sqliteDb.exec('UPDATE participants SET order_position = id WHERE order_position = 0');
   }
 } catch (error) {
-  // This catch block is generally fine for 'table_info' if it errors,
-  // indicating the table might not exist yet (though CREATE IF NOT EXISTS handles that).
-  // A more robust migration system would handle this explicitly.
-  console.log('Table schema check/update completed (or skipped if table not found).');
+  console.log('Table schema check/update completed');
 }
 
 export const db = new Kysely<DatabaseSchema>({
