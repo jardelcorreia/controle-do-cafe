@@ -2,13 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Plus, Info } from 'lucide-react';
-import { useState } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { Users, Plus, Info, History, Save, X } from 'lucide-react'; // Added Save, X
+import { useState, useEffect } from 'react';
+import { ReorderHistoryDialog } from './ReorderHistoryDialog';
+// Removed DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors from '@dnd-kit/core'
+// Removed arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy from '@dnd-kit/sortable'
+// Removed restrictToVerticalAxis from '@dnd-kit/modifiers'
 import { Participant } from '@/types/coffee';
-import { SortableParticipantItem } from './SortableParticipantItem';
+import { ParticipantItem } from './ParticipantItem'; // Changed from SortableParticipantItem
 
 interface ParticipantsListProps {
   participants: Participant[];
@@ -19,23 +20,24 @@ interface ParticipantsListProps {
   loading?: boolean;
 }
 
-export function ParticipantsList({ 
-  participants, 
-  onAddParticipant, 
+export function ParticipantsList({
+  participants,
+  onAddParticipant,
   onUpdateParticipant,
   onReorderParticipants,
   onDeleteParticipant,
-  loading 
+  loading
 }: ParticipantsListProps) {
   const [newParticipantName, setNewParticipantName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [stagedParticipants, setStagedParticipants] = useState<Participant[]>(participants);
+  const [isConfirmingOrder, setIsConfirmingOrder] = useState(false); // New state for loading
+
+  useEffect(() => {
+    setStagedParticipants(participants);
+  }, [participants]);
   
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // Removed sensors constant and useSensors call
 
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
@@ -57,34 +59,67 @@ export function ParticipantsList({
     }
   };
 
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
+  // Removed handleDragEnd function
 
-    if (active.id !== over?.id) {
-      const oldIndex = participants.findIndex(p => p.id === active.id);
-      const newIndex = participants.findIndex(p => p.id === over.id);
-      
-      const newOrder = arrayMove(participants, oldIndex, newIndex);
-      const participantIds = newOrder.map(p => p.id);
-      
-      try {
-        await onReorderParticipants(participantIds);
-      } catch (error) {
-        console.error('Error reordering participants:', error);
-      }
+  const handleMoveUp = (participantId: number) => { // Removed async
+    const index = stagedParticipants.findIndex(p => p.id === participantId);
+    if (index > 0) { // Can't move up if already at the top
+      const newParticipantsArray = [...stagedParticipants];
+      const temp = newParticipantsArray[index];
+      newParticipantsArray[index] = newParticipantsArray[index - 1];
+      newParticipantsArray[index - 1] = temp;
+      setStagedParticipants(newParticipantsArray);
+      // Removed onReorderParticipants call
     }
   };
+
+  const handleMoveDown = (participantId: number) => { // Removed async
+    const index = stagedParticipants.findIndex(p => p.id === participantId);
+    if (index < stagedParticipants.length - 1 && index !== -1) { // Can't move down if already at the bottom or not found
+      const newParticipantsArray = [...stagedParticipants];
+      const temp = newParticipantsArray[index];
+      newParticipantsArray[index] = newParticipantsArray[index + 1];
+      newParticipantsArray[index + 1] = temp;
+      setStagedParticipants(newParticipantsArray);
+      // Removed onReorderParticipants call
+    }
+  };
+
+  const handleConfirmReorder = async () => {
+    setIsConfirmingOrder(true);
+    try {
+      const participantIds = stagedParticipants.map(p => p.id);
+      await onReorderParticipants(participantIds);
+      // successful reorder will trigger useEffect to update stagedParticipants via props
+    } catch (error) {
+      console.error('Error confirming reorder:', error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsConfirmingOrder(false);
+    }
+  };
+
+  const handleCancelReorder = () => {
+    setStagedParticipants(participants);
+  };
+
+  const originalOrderIds = JSON.stringify(participants.map(p => p.id));
+  const stagedOrderIds = JSON.stringify(stagedParticipants.map(p => p.id));
+  const hasStagedChanges = originalOrderIds !== stagedOrderIds;
 
   return (
     <Card className="card-coffee-accent">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-          <Users className="h-5 w-5" />
-          Participantes ({participants.length})
-        </CardTitle>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex justify-between items-start">
+          <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+            <Users className="h-5 w-5" />
+            Participantes ({stagedParticipants.length}) {/* Use stagedParticipants length */}
+          </CardTitle>
+          <ReorderHistoryDialog participants={participants} /> {/* Still uses original participants */}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
           <Info className="h-4 w-4" />
-          <span>Arraste para reordenar a sequência de compra</span>
+          <span>Use as setas para reordenar a sequência de compra</span> {/* Updated text */}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -110,33 +145,55 @@ export function ParticipantsList({
           </div>
         </div>
 
-        {participants.length > 0 ? (
+        {stagedParticipants.length > 0 ? ( // Use stagedParticipants
           <div className="space-y-2">
             <Label>Lista de participantes (ordem de compra)</Label>
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext items={participants.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                <div className="grid gap-2">
-                  {participants.map((participant) => (
-                    <SortableParticipantItem
-                      key={participant.id}
-                      participant={participant}
-                      onUpdate={onUpdateParticipant}
-                      onDelete={onDeleteParticipant}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            {/* Removed DndContext and SortableContext wrappers */}
+            <div className="grid gap-2">
+              {stagedParticipants.map((participant, index) => ( // Use stagedParticipants, Added index for isFirst/isLast
+                <ParticipantItem // Changed from SortableParticipantItem
+                  key={participant.id}
+                  participant={participant}
+                  onUpdate={onUpdateParticipant}
+                  onDelete={onDeleteParticipant}
+                  onMoveUp={handleMoveUp} // Added prop
+                  onMoveDown={handleMoveDown} // Added prop
+                  isFirst={index === 0} // Added prop
+                  isLast={index === stagedParticipants.length - 1} // Use stagedParticipants length
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <p className="text-muted-foreground text-center py-4">
             Nenhum participante cadastrado
           </p>
+        )}
+        {hasStagedChanges && (
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              variant="outline"
+              onClick={handleCancelReorder} // Assign handler
+              size="sm"
+              disabled={isConfirmingOrder} // Add disabled state
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmReorder} // Assign handler
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white min-w-[150px]" // Added min-width for consistent size
+              disabled={isConfirmingOrder} // Add disabled state
+            >
+              {isConfirmingOrder ? (
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" role="status" aria-label="loading"></span>
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isConfirmingOrder ? 'Salvando...' : 'Confirmar Ordem'}
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

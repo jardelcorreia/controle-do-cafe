@@ -2,8 +2,12 @@ import { useCoffeeData } from '@/hooks/useCoffeeData';
 import { NextBuyerCard } from './NextBuyerCard';
 import { ParticipantsList } from './ParticipantsList';
 import { PurchaseHistory } from './PurchaseHistory';
+import { useAuth } from '@/contexts/AuthContext'; // Added
+import { Button } from '@/components/ui/button'; // Added
+import { LogOut } from 'lucide-react'; // Added
 
 export function CoffeeSystem() {
+  const { logout } = useAuth(); // Added
   const {
     participants,
     purchases,
@@ -31,8 +35,22 @@ export function CoffeeSystem() {
 
   return (
     <div className="min-h-screen coffee-pattern">
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="text-center space-y-2">
+      <div className="container relative mx-auto px-4 py-8 space-y-6"> {/* Added 'relative' */}
+
+        {/* Logout Button - Positioned Absolutely */}
+        <Button
+          variant="ghost"
+          onClick={logout}
+          aria-label="Sair"
+          size="sm" // Smaller size
+          className="absolute top-8 right-4 md:right-8 text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100" // Positioning classes
+        >
+          <LogOut className="sm:mr-1 h-4 w-4" /> {/* Apply margin only on sm screens and up */}
+          <span className="hidden sm:inline">Sair</span> {/* Hide text on small screens */}
+        </Button>
+
+        {/* Centered Title Group */}
+        <div className="text-center mb-8"> {/* New div for centered title */}
           <h1 className="text-4xl font-bold text-amber-900 dark:text-amber-100">
             ☕ Coffee Shop
           </h1>
@@ -41,6 +59,7 @@ export function CoffeeSystem() {
           </p>
         </div>
 
+        {/* Main content grid */}
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-6">
             <NextBuyerCard

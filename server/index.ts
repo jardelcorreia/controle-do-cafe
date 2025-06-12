@@ -10,6 +10,30 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  const sharedPassword = process.env.APP_SHARED_PASSWORD;
+
+  if (!sharedPassword) {
+    console.error('APP_SHARED_PASSWORD environment variable is not set.');
+    // Avoid disclosing that the password system is misconfigured if possible,
+    // but for now, a generic server error is fine. In a real scenario,
+    // this should be a critical startup failure or a more nuanced response.
+    return res.status(500).json({ error: 'Login system configuration error.' });
+  }
+
+  if (password && password === sharedPassword) {
+    // For a simple shared password system, we don't strictly need a token
+    // if the frontend will just use a flag.
+    // However, sending back a success indicator is good.
+    // A more robust system might issue a short-lived JWT here.
+    res.json({ authenticated: true, message: 'Login successful.' });
+  } else {
+    res.status(401).json({ error: 'Invalid password.' });
+  }
+});
+
 // Get all participants
 app.get('/api/participants', async (req, res) => {
   try {
@@ -70,43 +94,6 @@ app.post('/api/participants', async (req, res) => {
   }
 });
 
-// Update participant
-app.put('/api/participants/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name } = req.body;
-    
-    if (!name || name.trim() === '') {
-      res.status(400).json({ error: 'Name is required' });
-      return;
-    }
-
-    console.log('Updating participant:', id, 'with name:', name);
-    
-    const result = await db
-      .updateTable('participants')
-      .set({ name: name.trim() })
-      .where('id', '=', parseInt(id))
-      .returning(['id', 'name', 'created_at', 'order_position'])
-      .executeTakeFirst();
-    
-    if (!result) {
-      res.status(404).json({ error: 'Participant not found' });
-      return;
-    }
-    
-    console.log('Participant updated successfully:', result);
-    res.json(result);
-  } catch (error) {
-    console.error('Error updating participant:', error);
-    if (error.message && error.message.includes('UNIQUE constraint failed')) {
-      res.status(400).json({ error: 'Participant with this name already exists' });
-      return;
-    }
-    res.status(500).json({ error: 'Failed to update participant' });
-  }
-});
-
 // Reorder participants
 app.put('/api/participants/reorder', async (req, res) => {
   try {
@@ -118,6 +105,14 @@ app.put('/api/participants/reorder', async (req, res) => {
     }
 
     console.log('Reordering participants:', participantIds);
+
+    // Fetch current order before updating
+    const oldParticipants = await db
+      .selectFrom('participants')
+      .select('id')
+      .orderBy('order_position', 'asc')
+      .execute();
+    const oldOrderJson = JSON.stringify(oldParticipants.map(p => p.id));
     
     // Update order positions for all participants
     const updatePromises = participantIds.map((id, index) =>
@@ -129,6 +124,44 @@ app.put('/api/participants/reorder', async (req, res) => {
     );
     
     await Promise.all(updatePromises);
+
+    try {
+      // Record the reorder history
+      const newOrderJson = JSON.stringify(participantIds);
+      await db
+        .insertInto('reorder_history')
+        .values({
+          timestamp: new Date().toISOString(),
+          old_order: oldOrderJson,
+          new_order: newOrderJson,
+        })
+        .execute();
+      console.log('Reorder history recorded successfully.');
+
+      // Trim history to last 2 entries
+      const historyIds = await db
+        .selectFrom('reorder_history')
+        .select('id')
+        .orderBy('id', 'desc') // Order by ID descending to get newest first
+        .execute();
+
+      if (historyIds.length > 2) {
+        // Get the ID of the second newest record.
+        // Since they are ordered by id DESC, the second newest is at index 1.
+        const secondNewestId = historyIds[1].id;
+
+        // Delete records older than the second newest (i.e., all records with ID < secondNewestId)
+        await db
+          .deleteFrom('reorder_history')
+          .where('id', '<', secondNewestId)
+          .execute();
+        console.log(`Trimmed reorder history to the last 2 entries. Records older than ID ${secondNewestId} deleted.`);
+      }
+    } catch (historyError) {
+      console.error('Failed to record reorder history:', historyError);
+      // Optionally, you could inform the client that history recording failed,
+      // but for now, just logging on the server is fine to keep reordering functional.
+    }
     
     // Fetch updated participants
     const participants = await db
@@ -137,11 +170,49 @@ app.put('/api/participants/reorder', async (req, res) => {
       .orderBy('order_position', 'asc')
       .execute();
     
-    console.log('Participants reordered successfully');
+    console.log('Participants reordered successfully and history recorded');
     res.json(participants);
   } catch (error) {
     console.error('Error reordering participants:', error);
+    // It's good practice to also log the specific error if possible, e.g. error.message
     res.status(500).json({ error: 'Failed to reorder participants' });
+  }
+});
+
+// Update participant
+app.put('/api/participants/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name || name.trim() === '') {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+
+    console.log('Updating participant:', id, 'with name:', name);
+
+    const result = await db
+      .updateTable('participants')
+      .set({ name: name.trim() })
+      .where('id', '=', parseInt(id))
+      .returning(['id', 'name', 'created_at', 'order_position'])
+      .executeTakeFirst();
+
+    if (!result) {
+      res.status(404).json({ error: 'Participant not found' });
+      return;
+    }
+
+    console.log('Participant updated successfully:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating participant:', error);
+    if (error.message && error.message.includes('UNIQUE constraint failed')) {
+      res.status(400).json({ error: 'Participant with this name already exists' });
+      return;
+    }
+    res.status(500).json({ error: 'Failed to update participant' });
   }
 });
 
@@ -209,6 +280,26 @@ app.get('/api/purchases', async (req, res) => {
   }
 });
 
+// Get reorder history
+app.get('/api/reorder-history', async (req, res) => {
+  try {
+    console.log('Fetching reorder history');
+    const history = await db
+      .selectFrom('reorder_history')
+      .selectAll()
+      .orderBy('timestamp', 'desc')
+      .execute();
+
+    console.log(`Found ${history.length} reorder history entries`);
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching reorder history (will return empty list):', error);
+    // Return an empty list if there's an error (e.g., table not found)
+    // The client will show "No history found" which is acceptable in this case.
+    res.json([]);
+  }
+});
+
 // Record a coffee purchase
 app.post('/api/purchases', async (req, res) => {
   try {
@@ -240,14 +331,16 @@ app.delete('/api/purchases', async (req, res) => {
   try {
     console.log('Deleting all purchase history');
     
-    const result = await db
+    const results = await db
       .deleteFrom('coffee_purchases')
       .execute();
     
-    console.log('Purchase history deleted successfully. Rows affected:', result.numDeletedRows);
+    const numDeleted = results && results.length > 0 && results[0].numDeletedRows ? BigInt(results[0].numDeletedRows) : BigInt(0);
+
+    console.log('Purchase history deleted successfully. Rows affected:', numDeleted);
     res.json({ 
       message: 'Purchase history deleted successfully', 
-      deletedCount: result.numDeletedRows 
+      deletedCount: numDeleted.toString()
     });
   } catch (error) {
     console.error('Error deleting purchase history:', error);
