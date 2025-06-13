@@ -220,6 +220,66 @@ export function useCoffeeData() {
     }
   };
 
+  const recordOutOfOrderPurchase = async (selectedBuyerId: number, currentNextBuyerId: number | null | undefined) => {
+    try {
+      // Step 1: Record the purchase for the selected buyer
+      const purchaseResponse = await fetch('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participant_id: selectedBuyerId }),
+      });
+      if (!purchaseResponse.ok) {
+        const error = await purchaseResponse.json();
+        throw new Error(error.error || 'Failed to record out-of-order purchase');
+      }
+
+      // Step 2: Fetch the current (potentially updated by another user) list of participants
+      // to ensure reordering is based on the latest state.
+      const participantsResponse = await fetch('/api/participants');
+      if (!participantsResponse.ok) {
+        throw new Error('Failed to fetch participants for reordering');
+      }
+      const currentParticipants: Participant[] = await participantsResponse.json();
+
+      // Step 3: Calculate the new order
+      let newOrderedIds: number[];
+      const remainingParticipants = currentParticipants.filter(p => p.id !== selectedBuyerId);
+
+      if (currentNextBuyerId && currentNextBuyerId !== selectedBuyerId && remainingParticipants.find(p => p.id === currentNextBuyerId)) {
+        // If the original next buyer is still in the list (and wasn't the one who bought),
+        // they should be at the front of the "remaining" list before the selected buyer is appended.
+        const nextBuyerActual = remainingParticipants.find(p => p.id === currentNextBuyerId);
+        const others = remainingParticipants.filter(p => p.id !== currentNextBuyerId);
+        newOrderedIds = [nextBuyerActual!.id, ...others.map(p => p.id), selectedBuyerId];
+      } else {
+        // Fallback: just move selected buyer to the end of the current order of remaining participants.
+        newOrderedIds = [...remainingParticipants.map(p => p.id), selectedBuyerId];
+      }
+
+      // Ensure all participants are in the newOrderedIds, otherwise add them to the end before selectedBuyerId
+      const currentParticipantIds = currentParticipants.map(p => p.id);
+      for (const id of currentParticipantIds) {
+          if (!newOrderedIds.includes(id)) {
+              // Insert before the last element (selectedBuyerId)
+              const insertIndex = newOrderedIds.length > 0 ? newOrderedIds.length -1 : 0;
+              newOrderedIds.splice(insertIndex, 0, id);
+          }
+      }
+      // Remove duplicates just in case, keeping first occurrence
+      newOrderedIds = [...new Set(newOrderedIds)];
+
+      // Step 4: Call the existing reorderParticipants function
+      await reorderParticipants(newOrderedIds);
+
+      // Step 5: Refetch purchases (participants & nextBuyer are already refetched by reorderParticipants)
+      await fetchPurchases();
+
+    } catch (error) {
+      console.error('Error in recordOutOfOrderPurchase:', error);
+      throw error; // Re-throw to be caught by UI if needed
+    }
+  };
+
   return {
     participants,
     purchases,
@@ -243,5 +303,6 @@ export function useCoffeeData() {
     loadingHistory,
     errorHistory,
     fetchReorderHistory,
+    recordOutOfOrderPurchase, // Add this
   };
 }

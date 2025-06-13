@@ -19,7 +19,16 @@ export function CoffeeSystem() {
     deleteParticipant,
     recordPurchase,
     clearPurchaseHistory,
+    recordOutOfOrderPurchase, // Destructure the new function from useCoffeeData
   } = useCoffeeData();
+
+  // Remove the placeholderRecordOutOfOrder function
+  /*
+  const placeholderRecordOutOfOrder = async (selectedId: number, currentNextId: number | null | undefined) => {
+    console.log(`Placeholder: Out of order purchase for ${selectedId}, current next was ${currentNextId}`);
+    return new Promise(resolve => setTimeout(resolve, 1000));
+  };
+  */
 
   if (loading) {
     return (
@@ -64,7 +73,9 @@ export function CoffeeSystem() {
           <div className="space-y-6">
             <NextBuyerCard
               nextBuyer={nextBuyer}
+              participants={participants} // This should already be passed
               onRecordPurchase={recordPurchase}
+              onRecordOutOfOrderPurchase={recordOutOfOrderPurchase} // Pass the actual function
               loading={loading}
             />
             

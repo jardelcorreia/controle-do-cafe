@@ -1,15 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Coffee, User } from 'lucide-react';
-import { NextBuyerResponse } from '@/types/coffee';
+import { Coffee, User, Shuffle } from 'lucide-react';
+import { NextBuyerResponse, Participant } from '@/types/coffee';
+import { useState } from 'react'; // Added useState
+import { OutOfOrderPurchaseDialog } from './OutOfOrderPurchaseDialog'; // Added import
 
 interface NextBuyerCardProps {
   nextBuyer: NextBuyerResponse | null;
+  participants: Participant[];
   onRecordPurchase: (participantId: number) => Promise<void>;
+  onRecordOutOfOrderPurchase: (selectedParticipantId: number, currentNextBuyerId: number | null | undefined) => Promise<void>; // Add this
   loading?: boolean;
 }
 
-export function NextBuyerCard({ nextBuyer, onRecordPurchase, loading }: NextBuyerCardProps) {
+export function NextBuyerCard({ nextBuyer, participants, onRecordPurchase, onRecordOutOfOrderPurchase, loading }: NextBuyerCardProps) { // Add participants and new prop
+  const [isOutOfOrderDialogOpen, setIsOutOfOrderDialogOpen] = useState(false); // Added state
+
+  // New handler function in NextBuyerCard
+  const handleConfirmOutOfOrderPurchase = async (selectedParticipantId: number) => {
+    // setIsProcessingOutOfOrder(true); // For specific loading state if desired
+    try {
+      await onRecordOutOfOrderPurchase(selectedParticipantId, nextBuyer?.next_buyer?.id);
+      setIsOutOfOrderDialogOpen(false);
+    } catch (error) {
+      console.error("Error recording out-of-order purchase:", error);
+      // Potentially show error to user
+    } finally {
+      // setIsProcessingOutOfOrder(false);
+    }
+  };
+
   const handleRecordPurchase = async () => {
     if (nextBuyer?.next_buyer) {
       await onRecordPurchase(nextBuyer.next_buyer.id);
@@ -91,7 +111,25 @@ export function NextBuyerCard({ nextBuyer, onRecordPurchase, loading }: NextBuye
         >
           {loading ? 'Registrando...' : 'Marcar como comprado'}
         </Button>
+        {/* Add new button here */}
+        <Button
+          onClick={() => setIsOutOfOrderDialogOpen(true)} // Updated onClick
+          disabled={loading || !participants || participants.length === 0}
+          variant="outline"
+          className="w-full mt-2"
+        >
+          <Shuffle className="mr-2 h-4 w-4" />
+          Registrar Compra Fora da Ordem
+        </Button>
       </CardContent>
+      <OutOfOrderPurchaseDialog
+        isOpen={isOutOfOrderDialogOpen}
+        onOpenChange={setIsOutOfOrderDialogOpen}
+        participants={participants}
+        currentNextBuyerId={nextBuyer?.next_buyer?.id}
+        onConfirm={handleConfirmOutOfOrderPurchase}
+        loading={loading} // Can be a more specific loading state if needed
+      />
     </Card>
   );
 }
