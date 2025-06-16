@@ -220,59 +220,72 @@ export function useCoffeeData() {
     }
   };
 
-  const recordOutOfOrderPurchase = async (selectedBuyerId: number, currentNextBuyerId: number | null | undefined) => {
+  const recordOutOfOrderPurchase = async (data: { participantId?: number; buyerName?: string; currentNextBuyerId: number | null | undefined }) => {
     try {
-      // Step 1: Record the purchase for the selected buyer
+      const { participantId, buyerName, currentNextBuyerId } = data;
+      let requestBody;
+
+      if (participantId) {
+        requestBody = JSON.stringify({ participant_id: participantId });
+      } else if (buyerName) {
+        requestBody = JSON.stringify({ buyer_name: buyerName });
+      } else {
+        throw new Error('Either participantId or buyerName must be provided');
+      }
+
+      // Step 1: Record the purchase
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participant_id: selectedBuyerId }),
+        body: requestBody,
       });
+
       if (!purchaseResponse.ok) {
         const error = await purchaseResponse.json();
-        throw new Error(error.error || 'Failed to record out-of-order purchase');
+        throw new Error(error.error || 'Failed to record purchase');
       }
 
-      // Step 2: Fetch the current (potentially updated by another user) list of participants
-      // to ensure reordering is based on the latest state.
-      const participantsResponse = await fetch('/api/participants');
-      if (!participantsResponse.ok) {
-        throw new Error('Failed to fetch participants for reordering');
-      }
-      const currentParticipants: Participant[] = await participantsResponse.json();
-
-      // Step 3: Calculate the new order
-      let newOrderedIds: number[];
-      const remainingParticipants = currentParticipants.filter(p => p.id !== selectedBuyerId);
-
-      if (currentNextBuyerId && currentNextBuyerId !== selectedBuyerId && remainingParticipants.find(p => p.id === currentNextBuyerId)) {
-        // If the original next buyer is still in the list (and wasn't the one who bought),
-        // they should be at the front of the "remaining" list before the selected buyer is appended.
-        const nextBuyerActual = remainingParticipants.find(p => p.id === currentNextBuyerId);
-        const others = remainingParticipants.filter(p => p.id !== currentNextBuyerId);
-        newOrderedIds = [nextBuyerActual!.id, ...others.map(p => p.id), selectedBuyerId];
-      } else {
-        // Fallback: just move selected buyer to the end of the current order of remaining participants.
-        newOrderedIds = [...remainingParticipants.map(p => p.id), selectedBuyerId];
-      }
-
-      // Ensure all participants are in the newOrderedIds, otherwise add them to the end before selectedBuyerId
-      const currentParticipantIds = currentParticipants.map(p => p.id);
-      for (const id of currentParticipantIds) {
-          if (!newOrderedIds.includes(id)) {
-              // Insert before the last element (selectedBuyerId)
-              const insertIndex = newOrderedIds.length > 0 ? newOrderedIds.length -1 : 0;
-              newOrderedIds.splice(insertIndex, 0, id);
-          }
-      }
-      // Remove duplicates just in case, keeping first occurrence
-      newOrderedIds = [...new Set(newOrderedIds)];
-
-      // Step 4: Call the existing reorderParticipants function
-      await reorderParticipants(newOrderedIds);
-
-      // Step 5: Refetch purchases (participants & nextBuyer are already refetched by reorderParticipants)
+      // Step 2: Refetch purchases for all cases
       await fetchPurchases();
+
+      if (participantId) {
+        // Step 3: Fetch the current (potentially updated by another user) list of participants
+        // to ensure reordering is based on the latest state.
+        const participantsResponse = await fetch('/api/participants');
+        if (!participantsResponse.ok) {
+          throw new Error('Failed to fetch participants for reordering');
+        }
+        const currentParticipants: Participant[] = await participantsResponse.json();
+
+        // Step 4: Calculate the new order
+        let newOrderedIds: number[];
+        const remainingParticipants = currentParticipants.filter(p => p.id !== participantId);
+
+        if (currentNextBuyerId && currentNextBuyerId !== participantId && remainingParticipants.find(p => p.id === currentNextBuyerId)) {
+          const nextBuyerActual = remainingParticipants.find(p => p.id === currentNextBuyerId);
+          const others = remainingParticipants.filter(p => p.id !== currentNextBuyerId);
+          newOrderedIds = [nextBuyerActual!.id, ...others.map(p => p.id), participantId];
+        } else {
+          newOrderedIds = [...remainingParticipants.map(p => p.id), participantId];
+        }
+
+        const currentParticipantIds = currentParticipants.map(p => p.id);
+        for (const id of currentParticipantIds) {
+          if (!newOrderedIds.includes(id)) {
+            const insertIndex = newOrderedIds.length > 0 ? newOrderedIds.length - 1 : 0;
+            newOrderedIds.splice(insertIndex, 0, id);
+          }
+        }
+        newOrderedIds = [...new Set(newOrderedIds)];
+
+        // Step 5: Call the existing reorderParticipants function
+        // This will also refetch participants and nextBuyer
+        await reorderParticipants(newOrderedIds);
+      } else {
+        // External purchase, no reordering needed, but still refetch next buyer
+        // as the purchase list (which might influence next buyer if it was empty) has changed.
+        await fetchNextBuyer();
+      }
 
     } catch (error) {
       console.error('Error in recordOutOfOrderPurchase:', error);

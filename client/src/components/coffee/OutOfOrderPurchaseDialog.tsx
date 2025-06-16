@@ -1,5 +1,5 @@
 // client/src/components/coffee/OutOfOrderPurchaseDialog.tsx
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area'; // For potentially long lists
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Participant } from '@/types/coffee';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface OutOfOrderPurchaseDialogProps {
   isOpen: boolean;
@@ -33,18 +35,29 @@ export function OutOfOrderPurchaseDialog({
   loading
 }: OutOfOrderPurchaseDialogProps) {
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | undefined>(undefined);
+  const [isExternalBuyer, setIsExternalBuyer] = useState(false);
+  const [externalBuyerName, setExternalBuyerName] = useState('');
+  const externalBuyerCheckboxId = useId();
 
   const handleConfirm = () => {
-    if (selectedParticipantId) {
-      onConfirm(Number(selectedParticipantId));
+    if (isExternalBuyer) {
+      if (externalBuyerName.trim() !== '') {
+        // Temporarily console.log, will be updated to call onConfirm with buyerName
+        console.log(`External buyer: ${externalBuyerName.trim()}`);
+        // onConfirm({ buyerName: externalBuyerName.trim() }); // This will be the actual call
+      }
+    } else {
+      if (selectedParticipantId) {
+        onConfirm(Number(selectedParticipantId));
+      }
     }
   };
 
-  // Filter out the current next buyer from the list if they exist,
-  // as the primary use case is to select someone ELSE.
-  // However, if the list becomes empty as a result, it's an edge case to consider.
-  // For now, let's allow selecting anyone, but it could be refined.
-  const selectableParticipants = participants; // Or filter: participants.filter(p => p.id !== currentNextBuyerId);
+  const selectableParticipants = participants;
+
+  const isConfirmButtonDisabled = loading ||
+    (!isExternalBuyer && !selectedParticipantId) ||
+    (isExternalBuyer && externalBuyerName.trim() === '');
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -52,11 +65,35 @@ export function OutOfOrderPurchaseDialog({
         <DialogHeader>
           <DialogTitle>Registrar Compra Fora da Ordem</DialogTitle>
           <DialogDescription>
-            Selecione o participante que realizou a compra do café.
+            {isExternalBuyer
+              ? "Insira o nome da pessoa de fora que realizou a compra."
+              : "Selecione o participante que realizou a compra do café."}
           </DialogDescription>
         </DialogHeader>
-        {selectableParticipants.length > 0 ? (
-          <ScrollArea className="max-h-[300px] pr-4"> {/* Added ScrollArea */}
+
+        <div className="flex items-center space-x-2 py-2">
+          <Checkbox
+            id={externalBuyerCheckboxId}
+            checked={isExternalBuyer}
+            onCheckedChange={(checked) => setIsExternalBuyer(Boolean(checked))}
+          />
+          <Label htmlFor={externalBuyerCheckboxId} className="cursor-pointer">
+            Registrar para pessoa de fora?
+          </Label>
+        </div>
+
+        {isExternalBuyer ? (
+          <div className="space-y-2 py-2">
+            <Label htmlFor="externalBuyerName">Nome do Comprador</Label>
+            <Input
+              id="externalBuyerName"
+              value={externalBuyerName}
+              onChange={(e) => setExternalBuyerName(e.target.value)}
+              placeholder="Ex: Visitante da Silva"
+            />
+          </div>
+        ) : selectableParticipants.length > 0 ? (
+          <ScrollArea className="max-h-[300px] pr-4">
             <RadioGroup
               value={selectedParticipantId}
               onValueChange={setSelectedParticipantId}
@@ -89,7 +126,7 @@ export function OutOfOrderPurchaseDialog({
           </DialogClose>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedParticipantId || loading}
+            disabled={isConfirmButtonDisabled}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             {loading ? 'Confirmando...' : 'Confirmar Compra'}

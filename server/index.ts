@@ -260,7 +260,9 @@ app.delete('/api/participants/:id', async (req, res) => {
 app.get('/api/purchases', async (req, res) => {
   try {
     console.log('Fetching purchase history');
-    const purchases = await db
+
+    // Fetch coffee purchases
+    const coffeePurchases = await db
       .selectFrom('coffee_purchases')
       .innerJoin('participants', 'participants.id', 'coffee_purchases.participant_id')
       .select([
@@ -269,32 +271,55 @@ app.get('/api/purchases', async (req, res) => {
         'participants.name',
         'participants.id as participant_id'
       ])
-      .orderBy('coffee_purchases.purchase_date', 'desc')
       .execute();
-    
-    // Process purchases to ensure purchase_date is a valid UTC ISO string for the client
-    const processedPurchases = purchases.map(purchase => {
+
+    // Fetch external purchases
+    const externalPurchases = await db
+      .selectFrom('external_purchases')
+      .select(['id', 'name', 'purchase_date'])
+      .execute();
+
+    // Map coffee purchases
+    const mappedCoffeePurchases = coffeePurchases.map(purchase => {
       let formattedDate = purchase.purchase_date;
-      // If purchase_date is a string and doesn't contain 'Z' (meaning DB/driver stripped it),
-      // we re-append 'Z' to force UTC interpretation for Date constructor, then convert to ISO string.
       if (typeof purchase.purchase_date === 'string' && !purchase.purchase_date.endsWith('Z')) {
-        // Construct a Date object by appending 'Z' to force UTC parsing of the naive string
-        const dateObject = new Date(purchase.purchase_date + 'Z'); 
-        formattedDate = dateObject.toISOString(); // Convert back to proper ISO string with 'Z'
-        console.log(`Re-formatted date for client: Original: "${purchase.purchase_date}" -> Formatted: "${formattedDate}"`);
+        const dateObject = new Date(purchase.purchase_date + 'Z');
+        formattedDate = dateObject.toISOString();
       }
       return {
-        ...purchase,
-        purchase_date: formattedDate 
+        id: purchase.id,
+        name: purchase.name,
+        purchase_date: formattedDate,
+        participant_id: purchase.participant_id,
+        is_external: false,
       };
     });
 
-    processedPurchases.forEach(purchase => {
+    // Map external purchases
+    const mappedExternalPurchases = externalPurchases.map(purchase => {
+      let formattedDate = purchase.purchase_date;
+      if (typeof purchase.purchase_date === 'string' && !purchase.purchase_date.endsWith('Z')) {
+        const dateObject = new Date(purchase.purchase_date + 'Z');
+        formattedDate = dateObject.toISOString();
+      }
+      return {
+        id: purchase.id,
+        name: purchase.name,
+        purchase_date: formattedDate,
+        is_external: true,
+      };
+    });
+
+    // Combine and sort
+    const combinedPurchases = [...mappedCoffeePurchases, ...mappedExternalPurchases];
+    combinedPurchases.sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime());
+
+    combinedPurchases.forEach(purchase => {
       console.log(`Retrieved purchase_date (after re-formatting): ${purchase.purchase_date} (Type: ${typeof purchase.purchase_date})`);
     });
 
-    console.log(`Found ${processedPurchases.length} purchases`);
-    res.json(processedPurchases);
+    console.log(`Found ${combinedPurchases.length} total purchases`);
+    res.json(combinedPurchases);
   } catch (error) {
     console.error('Error fetching purchases:', error);
     res.status(500).json({ error: 'Failed to fetch purchases' });
@@ -324,29 +349,36 @@ app.get('/api/reorder-history', async (req, res) => {
 // Record a coffee purchase
 app.post('/api/purchases', async (req, res) => {
   try {
-    const { participant_id } = req.body;
-    
-    if (!participant_id) {
-      res.status(400).json({ error: 'Participant ID is required' });
-      return;
+    const { participant_id, buyer_name } = req.body;
+    const purchase_date = new Date().toISOString();
+
+    if (participant_id) {
+      console.log('Recording coffee purchase for participant:', participant_id);
+      const result = await db
+        .insertInto('coffee_purchases')
+        .values({
+          participant_id,
+          purchase_date,
+        })
+        .returning(['id', 'participant_id', 'purchase_date'])
+        .executeTakeFirst();
+      console.log('Coffee purchase recorded successfully:', result);
+      res.status(201).json(result);
+    } else if (buyer_name) {
+      console.log('Recording external purchase for buyer:', buyer_name);
+      const result = await db
+        .insertInto('external_purchases')
+        .values({
+          name: buyer_name,
+          purchase_date,
+        })
+        .returning(['id', 'name', 'purchase_date'])
+        .executeTakeFirst();
+      console.log('External purchase recorded successfully:', result);
+      res.status(201).json(result);
+    } else {
+      res.status(400).json({ error: 'Either participant_id or buyer_name is required' });
     }
-
-    console.log('Recording coffee purchase for participant:', participant_id);
-    
-    const utcTimestamp = new Date().toISOString(); // Explicitly setting UTC timestamp
-    console.log(`Timestamp being inserted (UTC ISO String): ${utcTimestamp}`); // Debug log
-
-    const result = await db
-      .insertInto('coffee_purchases')
-      .values({ 
-        participant_id, 
-        purchase_date: utcTimestamp 
-      })
-      .returning(['id', 'participant_id', 'purchase_date'])
-      .executeTakeFirst();
-    
-    console.log('Purchase recorded successfully:', result);
-    res.status(201).json(result);
   } catch (error) {
     console.error('Error recording purchase:', error);
     res.status(500).json({ error: 'Failed to record purchase' });

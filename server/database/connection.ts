@@ -46,6 +46,12 @@ sqliteDb.exec(`
     old_order TEXT,
     new_order TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS external_purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    purchase_date TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
 `);
 
 // Seed initial participants if the table is empty

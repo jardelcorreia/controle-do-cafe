@@ -7,9 +7,10 @@ export interface Participant {
 
 export interface Purchase {
   id: number;
-  participant_id: number;
+  participant_id?: number;
   name: string;
   purchase_date: string;
+  is_external?: boolean;
 }
 
 export interface NextBuyerResponse {

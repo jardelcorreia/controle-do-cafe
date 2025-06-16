@@ -5,6 +5,12 @@ export interface ReorderHistory {
   new_order: string; // TEXT (JSON string)
 }
 
+export interface ExternalPurchase {
+  id: number;
+  name: string;
+  purchase_date: string;
+}
+
 export interface DatabaseSchema {
   participants: {
     id: number;
@@ -18,4 +24,5 @@ export interface DatabaseSchema {
     purchase_date: string;
   };
   reorder_history: ReorderHistory;
+  external_purchases: ExternalPurchase;
 }
