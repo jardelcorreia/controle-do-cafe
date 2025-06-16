@@ -37,26 +37,19 @@ export function PurchaseHistory({ purchases, onClearHistory }: PurchaseHistoryPr
               </TableRow>
             </TableHeader>
             <TableBody>
-              {purchases.map((purchase) => {
-                const date = new Date(purchase.purchase_date);
-                return (
-                  <TableRow key={purchase.id} className="hover:bg-amber-50 dark:hover:bg-amber-950/30">
-                    <TableCell className="font-medium">
-                      {purchase.name}
-                    </TableCell>
-                    <TableCell>
-                      {date.toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell>
-                      {date.toLocaleTimeString('pt-BR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
+            {purchases.map((purchase) => {
+              const date = new Date(purchase.purchase_date); // Converts UTC to local time
+              return (
+                <TableRow key={purchase.id}>
+                  <TableCell>{purchase.name}</TableCell>
+                  <TableCell>{date.toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>
+                    {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
           </Table>
         ) : (
           <p className="text-muted-foreground text-center py-4">

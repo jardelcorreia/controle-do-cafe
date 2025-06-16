@@ -19,25 +19,30 @@ const sqliteDb = new Database(databasePath);
 // Enable foreign keys
 sqliteDb.pragma('foreign_keys = ON');
 
+// UTC string from database
+const utcString = "2024-06-16T15:00:00.000Z";
+const localDate = new Date(utcString);
+console.log(localDate.toLocaleString()); // Shows local time
+
 // Initialize tables if they don't exist
 sqliteDb.exec(`
   CREATE TABLE IF NOT EXISTS participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     order_position INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS coffee_purchases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     participant_id INTEGER NOT NULL,
-    purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    purchase_date TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
   );
 
   CREATE TABLE IF NOT EXISTS reorder_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, -- Using DATETIME for consistency
+    timestamp TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), -- Using DATETIME for consistency
     old_order TEXT,
     new_order TEXT
   );
@@ -53,8 +58,9 @@ try {
       { name: 'Phillipe', order_position: 2 },
       { name: 'Edmilson', order_position: 3 },
       { name: 'Jardel', order_position: 4 },
+      { name: 'Yanni', order_position: 5 },
     ];
-    const insertStmt = sqliteDb.prepare('INSERT INTO participants (name, order_position, created_at) VALUES (?, ?, datetime(\'now\'))');
+    const insertStmt = sqliteDb.prepare('INSERT INTO participants (name, order_position, created_at) VALUES (?, ?, strftime(\'%Y-%m-%dT%H:%M:%fZ\', \'now\'))');
     sqliteDb.transaction(() => {
       for (const p of initialParticipants) {
         insertStmt.run(p.name, p.order_position);

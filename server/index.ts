@@ -131,7 +131,7 @@ app.put('/api/participants/reorder', async (req, res) => {
       await db
         .insertInto('reorder_history')
         .values({
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString(), // Already uses ISO string for UTC
           old_order: oldOrderJson,
           new_order: newOrderJson,
         })
@@ -272,8 +272,29 @@ app.get('/api/purchases', async (req, res) => {
       .orderBy('coffee_purchases.purchase_date', 'desc')
       .execute();
     
-    console.log(`Found ${purchases.length} purchases`);
-    res.json(purchases);
+    // Process purchases to ensure purchase_date is a valid UTC ISO string for the client
+    const processedPurchases = purchases.map(purchase => {
+      let formattedDate = purchase.purchase_date;
+      // If purchase_date is a string and doesn't contain 'Z' (meaning DB/driver stripped it),
+      // we re-append 'Z' to force UTC interpretation for Date constructor, then convert to ISO string.
+      if (typeof purchase.purchase_date === 'string' && !purchase.purchase_date.endsWith('Z')) {
+        // Construct a Date object by appending 'Z' to force UTC parsing of the naive string
+        const dateObject = new Date(purchase.purchase_date + 'Z'); 
+        formattedDate = dateObject.toISOString(); // Convert back to proper ISO string with 'Z'
+        console.log(`Re-formatted date for client: Original: "${purchase.purchase_date}" -> Formatted: "${formattedDate}"`);
+      }
+      return {
+        ...purchase,
+        purchase_date: formattedDate 
+      };
+    });
+
+    processedPurchases.forEach(purchase => {
+      console.log(`Retrieved purchase_date (after re-formatting): ${purchase.purchase_date} (Type: ${typeof purchase.purchase_date})`);
+    });
+
+    console.log(`Found ${processedPurchases.length} purchases`);
+    res.json(processedPurchases);
   } catch (error) {
     console.error('Error fetching purchases:', error);
     res.status(500).json({ error: 'Failed to fetch purchases' });
@@ -312,9 +333,15 @@ app.post('/api/purchases', async (req, res) => {
 
     console.log('Recording coffee purchase for participant:', participant_id);
     
+    const utcTimestamp = new Date().toISOString(); // Explicitly setting UTC timestamp
+    console.log(`Timestamp being inserted (UTC ISO String): ${utcTimestamp}`); // Debug log
+
     const result = await db
       .insertInto('coffee_purchases')
-      .values({ participant_id })
+      .values({ 
+        participant_id, 
+        purchase_date: utcTimestamp 
+      })
       .returning(['id', 'participant_id', 'purchase_date'])
       .executeTakeFirst();
     
