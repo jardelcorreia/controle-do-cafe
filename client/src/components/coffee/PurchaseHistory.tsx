@@ -24,7 +24,7 @@ export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: P
           </CardTitle>
           {/* Show button only if there are purchases and no error */}
           {hasPurchases && !showError && (
-            <ClearHistoryDialog 
+            <ClearHistoryDialog
               onClearHistory={onClearHistory}
               purchaseCount={purchases.length}
             />
@@ -50,21 +50,19 @@ export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: P
               </TableRow>
             </TableHeader>
             <TableBody>
-            {purchases.map((purchase) => {
-              const date = new Date(purchase.purchase_date); // Converts UTC to local time
-              return (
-                <TableRow key={purchase.id}>
-                  <TableCell>{purchase.name}</TableCell>
-                  <TableCell>{date.toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>
-                    {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-          </Table>
-        ) : (
+              {purchases.map((purchase) => {
+                const date = new Date(purchase.purchase_date); // Converts UTC to local time
+                return (
+                  <TableRow key={purchase.id}>
+                    <TableCell>{purchase.name}</TableCell>
+                    <TableCell>{date.toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>
+                      {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
           </Table>
         )}
       </CardContent>
