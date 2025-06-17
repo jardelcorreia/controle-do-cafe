@@ -7,9 +7,13 @@ import { ClearHistoryDialog } from './ClearHistoryDialog';
 interface PurchaseHistoryProps {
   purchases: Purchase[];
   onClearHistory: () => Promise<void>;
+  purchasesError?: string | null; // Added purchasesError prop
 }
 
-export function PurchaseHistory({ purchases, onClearHistory }: PurchaseHistoryProps) {
+export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: PurchaseHistoryProps) {
+  const hasPurchases = Array.isArray(purchases) && purchases.length > 0;
+  const showError = !!purchasesError;
+
   return (
     <Card className="card-coffee-accent">
       <CardHeader>
@@ -18,7 +22,8 @@ export function PurchaseHistory({ purchases, onClearHistory }: PurchaseHistoryPr
             <History className="h-5 w-5" />
             Histórico de compras
           </CardTitle>
-          {purchases.length > 0 && (
+          {/* Show button only if there are purchases and no error */}
+          {hasPurchases && !showError && (
             <ClearHistoryDialog 
               onClearHistory={onClearHistory}
               purchaseCount={purchases.length}
@@ -27,7 +32,15 @@ export function PurchaseHistory({ purchases, onClearHistory }: PurchaseHistoryPr
         </div>
       </CardHeader>
       <CardContent>
-        {purchases.length > 0 ? (
+        {showError ? (
+          <p className="text-red-500 text-center py-4">
+            Erro ao carregar o histórico de compras: {purchasesError}
+          </p>
+        ) : !hasPurchases ? (
+          <p className="text-muted-foreground text-center py-4">
+            Nenhuma compra registrada
+          </p>
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -52,9 +65,7 @@ export function PurchaseHistory({ purchases, onClearHistory }: PurchaseHistoryPr
           </TableBody>
           </Table>
         ) : (
-          <p className="text-muted-foreground text-center py-4">
-            Nenhuma compra registrada
-          </p>
+          </Table>
         )}
       </CardContent>
     </Card>

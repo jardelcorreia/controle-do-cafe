@@ -13,6 +13,9 @@ export function CoffeeSystem() {
     purchases,
     nextBuyer,
     loading,
+    participantsError, // Added for potential display, though not used directly here yet
+    purchasesError,    // Destructure purchasesError
+    nextBuyerError,    // Added for potential display
     addParticipant,
     updateParticipant,
     reorderParticipants,
@@ -91,7 +94,8 @@ export function CoffeeSystem() {
 
           <div>
             <PurchaseHistory 
-              purchases={purchases} 
+              purchases={purchases}
+              purchasesError={purchasesError} // Pass purchasesError as a prop
               onClearHistory={clearPurchaseHistory}
             />
           </div>

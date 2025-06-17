@@ -14,6 +14,9 @@ export function useCoffeeData() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [nextBuyer, setNextBuyer] = useState<NextBuyerResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [participantsError, setParticipantsError] = useState<string | null>(null);
+  const [purchasesError, setPurchasesError] = useState<string | null>(null);
+  const [nextBuyerError, setNextBuyerError] = useState<string | null>(null);
 
   // State for reorder history
   const [reorderHistory, setReorderHistory] = useState<ReorderHistoryEntry[]>([]);
@@ -21,32 +24,59 @@ export function useCoffeeData() {
   const [errorHistory, setErrorHistory] = useState<string | null>(null);
 
   const fetchParticipants = async () => {
+    setParticipantsError(null);
     try {
       const response = await fetch('/api/participants');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to fetch participants: ${response.statusText}`);
+      }
       setParticipants(data);
     } catch (error) {
       console.error('Error fetching participants:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while fetching participants.';
+      setParticipantsError(errorMessage);
+      setParticipants([]);
+    } finally {
+      // Add any participant-specific loading reset here if needed in the future
     }
   };
 
   const fetchPurchases = async () => {
+    setPurchasesError(null);
     try {
       const response = await fetch('/api/purchases');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to fetch purchases: ${response.statusText}`);
+      }
       setPurchases(data);
     } catch (error) {
       console.error('Error fetching purchases:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while fetching purchases.';
+      setPurchasesError(errorMessage);
+      setPurchases([]);
+    } finally {
+      // Add any purchase-specific loading reset here if needed in the future
     }
   };
 
   const fetchNextBuyer = async () => {
+    setNextBuyerError(null);
     try {
       const response = await fetch('/api/next-buyer');
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to fetch next buyer: ${response.statusText}`);
+      }
       setNextBuyer(data);
     } catch (error) {
       console.error('Error fetching next buyer:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while fetching next buyer.';
+      setNextBuyerError(errorMessage);
+      setNextBuyer(null);
+    } finally {
+      // Add any nextBuyer-specific loading reset here if needed in the future
     }
   };
 
@@ -295,8 +325,11 @@ export function useCoffeeData() {
 
   return {
     participants,
+    participantsError,
     purchases,
+    purchasesError,
     nextBuyer,
+    nextBuyerError,
     loading,
     addParticipant,
     updateParticipant,

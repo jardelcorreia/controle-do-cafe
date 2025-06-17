@@ -34,6 +34,18 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    // Perform a simple query to check database connectivity
+    await db.selectFrom('participants').select('id').limit(1).execute();
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({ status: 'error', message: 'Database not ready' });
+  }
+});
+
 // Get all participants
 app.get('/api/participants', async (req, res) => {
   try {

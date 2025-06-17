@@ -31,7 +31,18 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
     export DATA_DIRECTORY="./data" # Ou defina no seu ambiente
     mkdir -p data
     ```
-    **Observação:** O aplicativo inicializará automaticamente as tabelas do banco de dados (`participants`, `coffee_purchases`, `reorder_history`) no arquivo `data/database.sqlite` se elas não existirem. Certifique-se de que o diretório `data` seja gravável.
+
+### Configuração do Banco de Dados com `DATA_DIRECTORY`
+
+O local do arquivo de banco de dados SQLite (`database.sqlite`) é determinado pela variável de ambiente `DATA_DIRECTORY`.
+
+- Conforme definido em `server/database/connection.ts`, se `DATA_DIRECTORY` estiver configurada, seu valor será usado como o caminho para a pasta que conterá o arquivo `database.sqlite`.
+- Se `DATA_DIRECTORY` não estiver configurada, o sistema usará `./data` como o diretório padrão.
+- O aplicativo criará automaticamente o diretório especificado (e o arquivo `database.sqlite` dentro dele na primeira execução) se ele não existir.
+
+Para desenvolvimento local, você pode definir `DATA_DIRECTORY` explicitamente (como mostrado no exemplo acima) ou omiti-la para usar o padrão `./data`. É crucial que o processo do Node.js tenha permissões de escrita para este diretório.
+
+Esta variável é fundamental para garantir que os dados da aplicação (participantes, histórico de compras, etc.) sejam persistidos corretamente.
 
 4.  Configure a senha compartilhada para o login (para desenvolvimento local):
     - Crie um arquivo `.env` na raiz do projeto (ao lado de `package.json`).
@@ -63,11 +74,11 @@ Ao fazer o deploy para plataformas como Render, Railway, ou DigitalOcean App Pla
 2.  **Start Command**: `npm start` (ou conforme necessário pela plataforma)
 3.  **Variáveis de Ambiente Essenciais**:
     - `NODE_ENV=production`
-    - `DATA_DIRECTORY`: Configure um caminho para armazenamento persistente (ex: `/opt/render/project/data` no Render).
+    - `DATA_DIRECTORY`: Configure um caminho para armazenamento persistente. Por exemplo, no Render, a configuração em `render.yaml` pode montar um disco em `/opt/render/project/data`, e você definiria `DATA_DIRECTORY` para este caminho.
     - `APP_SHARED_PASSWORD`: **Defina a senha compartilhada desejada aqui.** Este é crucial para a funcionalidade de login.
     - `PORT`: A plataforma geralmente define isso, mas se necessário, configure para a porta que seu serviço deve escutar (ex: 3001 ou 10000).
 
-    **Nota sobre Persistência de Dados**: É vital configurar um disco/volume persistente para o `DATA_DIRECTORY` em sua plataforma de deploy. Isso garante que o arquivo `database.sqlite` (com todos os dados de participantes, compras e histórico) não seja perdido entre deploys ou reinicializações do serviço.
+    **Nota sobre Persistência de Dados**: É vital configurar um disco/volume persistente para o `DATA_DIRECTORY` em sua plataforma de deploy, como ilustrado no exemplo do Render com `render.yaml`. Isso garante que o arquivo `database.sqlite` (localizado dentro do `DATA_DIRECTORY` e contendo todos os dados de participantes, compras e histórico) não seja perdido entre deploys ou reinicializações do serviço. A não configuração correta resultará na perda de todos os dados da aplicação a cada novo deploy ou reinício.
 
 ## 📝 Estrutura do Projeto
 ```
