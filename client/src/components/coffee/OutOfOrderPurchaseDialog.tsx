@@ -22,7 +22,7 @@ interface OutOfOrderPurchaseDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   participants: Participant[];
   currentNextBuyerId: number | null | undefined; // ID of the participant who is currently next
-  onConfirm: (selectedParticipantId: number) => void;
+  onConfirm: (data: { participantId?: number; buyerName?: string; currentNextBuyerId: number | null | undefined }) => void;
   loading?: boolean; // To disable confirm button during processing
 }
 
@@ -42,13 +42,11 @@ export function OutOfOrderPurchaseDialog({
   const handleConfirm = () => {
     if (isExternalBuyer) {
       if (externalBuyerName.trim() !== '') {
-        // Temporarily console.log, will be updated to call onConfirm with buyerName
-        console.log(`External buyer: ${externalBuyerName.trim()}`);
-        // onConfirm({ buyerName: externalBuyerName.trim() }); // This will be the actual call
+        onConfirm({ buyerName: externalBuyerName.trim(), currentNextBuyerId });
       }
     } else {
       if (selectedParticipantId) {
-        onConfirm(Number(selectedParticipantId));
+        onConfirm({ participantId: Number(selectedParticipantId), currentNextBuyerId });
       }
     }
   };
