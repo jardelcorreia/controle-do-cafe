@@ -388,18 +388,29 @@ app.post('/api/purchases', async (req, res) => {
 // Delete all purchase history
 app.delete('/api/purchases', async (req, res) => {
   try {
-    console.log('Deleting all purchase history');
+    console.log('Deleting all purchase history (regular and external)');
     
-    const results = await db
+    const coffeeResults = await db
       .deleteFrom('coffee_purchases')
       .execute();
     
-    const numDeleted = results && results.length > 0 && results[0].numDeletedRows ? BigInt(results[0].numDeletedRows) : BigInt(0);
+    const externalResults = await db
+      .deleteFrom('external_purchases')
+      .execute();
 
-    console.log('Purchase history deleted successfully. Rows affected:', numDeleted);
+    let totalDeletedRows = BigInt(0);
+
+    if (coffeeResults && coffeeResults.length > 0 && coffeeResults[0].numDeletedRows) {
+      totalDeletedRows += BigInt(coffeeResults[0].numDeletedRows);
+    }
+    if (externalResults && externalResults.length > 0 && externalResults[0].numDeletedRows) {
+      totalDeletedRows += BigInt(externalResults[0].numDeletedRows);
+    }
+
+    console.log('All purchase history deleted successfully. Total rows affected:', totalDeletedRows);
     res.json({ 
-      message: 'Purchase history deleted successfully', 
-      deletedCount: numDeleted.toString()
+      message: 'All purchase history (regular and external) deleted successfully',
+      deletedCount: totalDeletedRows.toString()
     });
   } catch (error) {
     console.error('Error deleting purchase history:', error);
