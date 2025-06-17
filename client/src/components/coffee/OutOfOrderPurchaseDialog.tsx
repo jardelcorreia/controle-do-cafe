@@ -64,7 +64,7 @@ export function OutOfOrderPurchaseDialog({
           <DialogTitle>Registrar Compra Fora da Ordem</DialogTitle>
           <DialogDescription>
             {isExternalBuyer
-              ? "Insira o nome da pessoa de fora que realizou a compra."
+              ? "Insira o nome da pessoa que realizou a compra."
               : "Selecione o participante que realizou a compra do café."}
           </DialogDescription>
         </DialogHeader>
@@ -76,7 +76,7 @@ export function OutOfOrderPurchaseDialog({
             onCheckedChange={(checked) => setIsExternalBuyer(Boolean(checked))}
           />
           <Label htmlFor={externalBuyerCheckboxId} className="cursor-pointer">
-            Registrar para pessoa de fora?
+            Compra fora da lista de participantes
           </Label>
         </div>
 
@@ -87,7 +87,7 @@ export function OutOfOrderPurchaseDialog({
               id="externalBuyerName"
               value={externalBuyerName}
               onChange={(e) => setExternalBuyerName(e.target.value)}
-              placeholder="Ex: Visitante da Silva"
+              placeholder="Digite o nome do comprador"
             />
           </div>
         ) : selectableParticipants.length > 0 ? (
