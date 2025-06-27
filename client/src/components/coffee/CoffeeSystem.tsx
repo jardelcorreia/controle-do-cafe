@@ -23,6 +23,7 @@ export function CoffeeSystem() {
     recordPurchase,
     clearPurchaseHistory,
     recordOutOfOrderPurchase, // Destructure the new function from useCoffeeData
+    deletePurchase, // Destructure deletePurchase
   } = useCoffeeData();
 
   // Remove the placeholderRecordOutOfOrder function
@@ -93,10 +94,11 @@ export function CoffeeSystem() {
           </div>
 
           <div>
-            <PurchaseHistory 
+            <PurchaseHistory
               purchases={purchases}
               purchasesError={purchasesError} // Pass purchasesError as a prop
               onClearHistory={clearPurchaseHistory}
+              deletePurchase={deletePurchase} // Pass deletePurchase
             />
           </div>
         </div>

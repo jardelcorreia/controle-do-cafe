@@ -42,6 +42,28 @@ export function useCoffeeData() {
     }
   };
 
+  const deletePurchase = async (purchaseId: number, isExternal: boolean) => {
+    try {
+      const type = isExternal ? 'external' : 'coffee';
+      const response = await fetch(`/api/purchases/${purchaseId}?type=${type}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to delete purchase ${purchaseId}`);
+      }
+
+      // Refetch data to update the UI
+      await fetchPurchases();
+      await fetchNextBuyer(); // Next buyer might change if the deleted purchase was the last one
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      // Propagate the error so the UI can handle it (e.g., show a notification)
+      throw error;
+    }
+  };
+
   const fetchPurchases = async () => {
     setPurchasesError(null);
     try {
@@ -350,5 +372,6 @@ export function useCoffeeData() {
     errorHistory,
     fetchReorderHistory,
     recordOutOfOrderPurchase, // Add this
+    deletePurchase, // Add this
   };
 }

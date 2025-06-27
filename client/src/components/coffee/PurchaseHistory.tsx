@@ -1,18 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { History } from 'lucide-react';
+import { History, Trash2 } from 'lucide-react'; // Added Trash2 for direct use if needed, though dialog handles it
 import { Purchase } from '@/types/coffee';
 import { ClearHistoryDialog } from './ClearHistoryDialog';
+import { DeletePurchaseDialog } from './DeletePurchaseDialog'; // Import the new dialog
+import { Button } from '@/components/ui/button'; // For the delete button if used directly
 
 interface PurchaseHistoryProps {
   purchases: Purchase[];
   onClearHistory: () => Promise<void>;
-  purchasesError?: string | null; // Added purchasesError prop
+  deletePurchase: (purchaseId: number, isExternal: boolean) => Promise<void>; // Add deletePurchase prop
+  purchasesError?: string | null;
 }
 
-export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: PurchaseHistoryProps) {
+export function PurchaseHistory({
+  purchases,
+  onClearHistory,
+  deletePurchase, // Destructure deletePurchase
+  purchasesError,
+}: PurchaseHistoryProps) {
   const hasPurchases = Array.isArray(purchases) && purchases.length > 0;
   const showError = !!purchasesError;
+
+  const handleDelete = async (purchaseId: number, isExternal: boolean) => {
+    try {
+      await deletePurchase(purchaseId, isExternal);
+      // Optionally, add a success toast/notification here
+    } catch (error) {
+      console.error('Failed to delete purchase:', error);
+      // Optionally, add an error toast/notification here
+    }
+  };
 
   return (
     <Card className="card-coffee-accent">
@@ -22,7 +40,6 @@ export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: P
             <History className="h-5 w-5" />
             Histórico de compras
           </CardTitle>
-          {/* Show button only if there are purchases and no error */}
           {hasPurchases && !showError && (
             <ClearHistoryDialog
               onClearHistory={onClearHistory}
@@ -47,17 +64,28 @@ export function PurchaseHistory({ purchases, onClearHistory, purchasesError }: P
                 <TableHead>Nome</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Horário</TableHead>
+                <TableHead className="text-right">Ações</TableHead> {/* New Actions Header */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {purchases.map((purchase) => {
-                const date = new Date(purchase.purchase_date); // Converts UTC to local time
+                const date = new Date(purchase.purchase_date);
+                const formattedDate = date.toLocaleDateString('pt-BR');
+                const formattedTime = date.toLocaleTimeString('pt-BR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
                 return (
-                  <TableRow key={purchase.id}>
+                  <TableRow key={`${purchase.id}-${purchase.is_external}`}> {/* Ensure unique key if IDs could overlap */}
                     <TableCell>{purchase.name}</TableCell>
-                    <TableCell>{date.toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
-                      {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    <TableCell>{formattedDate}</TableCell>
+                    <TableCell>{formattedTime}</TableCell>
+                    <TableCell className="text-right">
+                      <DeletePurchaseDialog
+                        purchaseName={purchase.name}
+                        purchaseDate={`${formattedDate} às ${formattedTime}`}
+                        onConfirmDelete={() => handleDelete(purchase.id, purchase.is_external)}
+                      />
                     </TableCell>
                   </TableRow>
                 );

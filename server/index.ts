@@ -430,6 +430,49 @@ app.delete('/api/purchases', async (req, res) => {
   }
 });
 
+// Delete individual purchase
+app.delete('/api/purchases/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.query; // 'coffee' or 'external'
+
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Valid purchase ID is required' });
+    }
+    const purchaseId = parseInt(id);
+
+    if (type !== 'coffee' && type !== 'external') {
+      return res.status(400).json({ error: 'Invalid purchase type specified. Must be "coffee" or "external".' });
+    }
+
+    console.log(`Deleting ${type} purchase with ID:`, purchaseId);
+
+    let result;
+    if (type === 'coffee') {
+      result = await db
+        .deleteFrom('coffee_purchases')
+        .where('id', '=', purchaseId)
+        .executeTakeFirst();
+    } else { // type === 'external'
+      result = await db
+        .deleteFrom('external_purchases')
+        .where('id', '=', purchaseId)
+        .executeTakeFirst();
+    }
+
+    if (result && result.numDeletedRows > 0) {
+      console.log(`${type} purchase ${purchaseId} deleted successfully.`);
+      res.json({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} purchase deleted successfully` });
+    } else {
+      console.log(`${type} purchase ${purchaseId} not found or already deleted.`);
+      res.status(404).json({ error: `${type.charAt(0).toUpperCase() + type.slice(1)} purchase not found` });
+    }
+  } catch (error) {
+    console.error('Error deleting individual purchase:', error);
+    res.status(500).json({ error: 'Failed to delete purchase' });
+  }
+});
+
 // Get next person to buy coffee
 app.get('/api/next-buyer', async (req, res) => {
   try {
