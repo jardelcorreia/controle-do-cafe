@@ -6,10 +6,10 @@ import { DatabaseSchema } from "./schema.js";
 
 // Ensure data directory exists
 const dataDir = process.env.DATA_DIRECTORY || "./data";
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-  console.log(`Created data directory: ${dataDir}`);
-}
+// if (!fs.existsSync(dataDir)) {
+//   fs.mkdirSync(dataDir, { recursive: true });
+//   console.log(`Created data directory: ${dataDir}`);
+// }
 
 const databasePath = path.join(dataDir, "database.sqlite");
 console.log(`Database path: ${databasePath}`);
