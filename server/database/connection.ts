@@ -1,113 +1,47 @@
-import { Kysely, SqliteDialect } from "kysely";
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import { Kysely, PostgresDialect } from "kysely";
+import pg from "pg"; // Import 'pg'
+const { Pool } = pg; // Destructure Pool from 'pg'
 import { DatabaseSchema } from "./schema.js";
+import dotenv from "dotenv";
 
-// Ensure data directory exists
-const dataDir = process.env.DATA_DIRECTORY || "./data";
-// if (!fs.existsSync(dataDir)) {
-//   fs.mkdirSync(dataDir, { recursive: true });
-//   console.log(`Created data directory: ${dataDir}`);
-// }
+dotenv.config(); // Carrega variáveis de ambiente do .env se existir (para desenvolvimento local)
 
-const databasePath = path.join(dataDir, "database.sqlite");
-console.log(`Database path: ${databasePath}`);
-
-const sqliteDb = new Database(databasePath);
-
-// Enable foreign keys
-sqliteDb.pragma("foreign_keys = ON");
-
-// UTC string from database
-const utcString = "2024-06-16T15:00:00.000Z";
-const localDate = new Date(utcString);
-console.log(localDate.toLocaleString()); // Shows local time
-
-// Initialize tables if they don't exist
-sqliteDb.exec(`
-  CREATE TABLE IF NOT EXISTS participants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    order_position INTEGER DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS coffee_purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    participant_id INTEGER NOT NULL,
-    purchase_date TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    FOREIGN KEY (participant_id) REFERENCES participants(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS reorder_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), -- Using DATETIME for consistency
-    old_order TEXT,
-    new_order TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS external_purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    purchase_date TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-  );
-`);
-
-// // Seed initial participants if the table is empty
-// try {
-//   const participantCountResult = sqliteDb
-//     .prepare("SELECT COUNT(*) as count FROM participants")
-//     .get() as { count: number };
-//   if (participantCountResult && participantCountResult.count === 0) {
-//     console.log("No participants found, seeding initial data...");
-//     const initialParticipants = [
-//       { name: "Werbet", order_position: 1 },
-//       { name: "Phillipe", order_position: 2 },
-//       { name: "Edmilson", order_position: 3 },
-//       { name: "Jardel", order_position: 4 },
-//     ];
-//     const insertStmt = sqliteDb.prepare(
-//       "INSERT INTO participants (name, order_position, created_at) VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-//     );
-//     sqliteDb.transaction(() => {
-//       for (const p of initialParticipants) {
-//         insertStmt.run(p.name, p.order_position);
-//       }
-//     })(); // Immediately invoke the transaction
-//     console.log("Initial participants seeded successfully.");
-//   }
-// } catch (seedError) {
-//   console.error("Error seeding initial participants:", seedError);
-// }
-
-// // Check if we need to add order_position column (for existing databases)
-// // This logic should ideally be part of a migration system.
-// // For now, commenting out as it might cause issues if run repeatedly or if schema changes.
-// try {
-//   const tableInfo = sqliteDb.prepare("PRAGMA table_info(participants)").all();
-//   const hasOrderPosition = tableInfo.some(
-//     (col) => col.name === "order_position"
-//   );
-
-//   if (!hasOrderPosition) {
-//     console.log("Adding order_position column to existing participants table");
-//     sqliteDb.exec(
-//       "ALTER TABLE participants ADD COLUMN order_position INTEGER DEFAULT 0"
-//     );
-//     sqliteDb.exec(
-//       "UPDATE participants SET order_position = id WHERE order_position = 0"
-//     );
-//   }
-// } catch (error) {
-//   console.log("Table schema check/update completed");
-// }
-
-export const db = new Kysely<DatabaseSchema>({
-  dialect: new SqliteDialect({
-    database: sqliteDb,
+const dialect = new PostgresDialect({
+  pool: new Pool({
+    connectionString: process.env.DATABASE_URL, // Usará a connection string do Supabase
+    // Configurações adicionais do pool, se necessário:
+    // max: 10, // Número máximo de conexões no pool
+    // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // Para conexões SSL, comum em produção
   }),
-  log: ["query", "error"],
 });
 
-console.log("Database connection established");
+export const db = new Kysely<DatabaseSchema>({
+  dialect,
+  log: process.env.NODE_ENV === "development" ? ["query", "error"] : ["error"], // Log queries apenas em desenvolvimento
+});
+
+console.log("Database connection setup for PostgreSQL.");
+
+// Não precisamos mais de:
+// - Criação de diretório
+// - Caminho de arquivo SQLite
+// - Seed de dados aqui (deve ser feito no Supabase ou via script de migração)
+// - Verificação de schema (ALTER TABLE) aqui (deve ser feito via migrações)
+
+// Para verificar a conexão (opcional, pode ser feito no server/index.ts ao iniciar)
+async function checkConnection() {
+  try {
+    // Kysely não tem um método db.health() ou db.connect() direto para apenas testar.
+    // Uma forma de testar é fazer uma query simples.
+    // Como Kysely é lazy, a conexão só é realmente tentada na primeira query.
+    // Para um teste explícito, você pode tentar obter um cliente do pool:
+    const poolClient = await dialect.pool.connect();
+    console.log("Successfully connected to PostgreSQL database!");
+    poolClient.release();
+  } catch (error) {
+    console.error("Failed to connect to PostgreSQL database:", error);
+  }
+}
+
+// Descomente se quiser verificar a conexão na inicialização deste módulo
+// checkConnection();
