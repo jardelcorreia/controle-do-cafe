@@ -17,40 +17,68 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Router DOM
 - **Backend**: Node.js, Express 5, TypeScript
-- **Database**: SQLite com Kysely ORM
+- **Database**: PostgreSQL (via Supabase) com Kysely ORM
 
 ## 📦 Instalação e Configuração
 
-1.  Clone o repositório
-2.  Instale as dependências:
+1.  **Clone o repositório**
+    ```bash
+    git clone https://github.com/jardelcorreia/controle-do-cafe.git
+    cd controle-do-cafe
+    ```
+2.  **Instale as dependências**
     ```bash
     npm install
     ```
-3.  Configure o diretório de dados:
-    ```bash
-    export DATA_DIRECTORY="./data" # Ou defina no seu ambiente
-    mkdir -p data
-    ```
+3.  **Configure o Banco de Dados (Supabase)**
+    - Crie um projeto no [Supabase](https://supabase.com/).
+    - No editor SQL do Supabase, execute o script SQL abaixo para criar as tabelas necessárias:
+      ```sql
+      -- Tabela de Participantes
+      CREATE TABLE participants (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          order_position INTEGER DEFAULT 0
+      );
 
-### Configuração do Banco de Dados com `DATA_DIRECTORY`
+      -- Tabela de Compras de Café
+      CREATE TABLE coffee_purchases (
+          id SERIAL PRIMARY KEY,
+          participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+          purchase_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
 
-O local do arquivo de banco de dados SQLite (`database.sqlite`) é determinado pela variável de ambiente `DATA_DIRECTORY`.
+      -- Tabela de Histórico de Reordenamento
+      CREATE TABLE reorder_history (
+          id SERIAL PRIMARY KEY,
+          "timestamp" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          old_order TEXT,
+          new_order TEXT
+      );
 
-- Conforme definido em `server/database/connection.ts`, se `DATA_DIRECTORY` estiver configurada, seu valor será usado como o caminho para a pasta que conterá o arquivo `database.sqlite`.
-- Se `DATA_DIRECTORY` não estiver configurada, o sistema usará `./data` como o diretório padrão.
-- O aplicativo criará automaticamente o diretório especificado (e o arquivo `database.sqlite` dentro dele na primeira execução) se ele não existir.
+      -- Tabela de Compras Externas
+      CREATE TABLE external_purchases (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          purchase_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
 
-Para desenvolvimento local, você pode definir `DATA_DIRECTORY` explicitamente (como mostrado no exemplo acima) ou omiti-la para usar o padrão `./data`. É crucial que o processo do Node.js tenha permissões de escrita para este diretório.
-
-Esta variável é fundamental para garantir que os dados da aplicação (participantes, histórico de compras, etc.) sejam persistidos corretamente.
-
-4.  Configure a senha compartilhada para o login (para desenvolvimento local):
-    - Crie um arquivo `.env` na raiz do projeto (ao lado de `package.json`).
-    - Adicione a seguinte linha, substituindo pela senha desejada:
+      -- Opcional: Índices
+      CREATE INDEX idx_participants_order_position ON participants(order_position);
+      CREATE INDEX idx_coffee_purchases_participant_id ON coffee_purchases(participant_id);
       ```
-      APP_SHARED_PASSWORD=sua_senha_secreta_aqui
+    - Obtenha a string de conexão do **Connection Pooler** do seu banco de dados Supabase. Ela se parecerá com: `postgresql://postgres.project_ref:[YOUR-PASSWORD]@aws-region.pooler.supabase.com:6543/postgres`.
+
+4.  **Configure as Variáveis de Ambiente (para desenvolvimento local)**
+    - Crie um arquivo `.env` na raiz do projeto.
+    - Adicione as seguintes variáveis, substituindo pelos seus valores:
+      ```env
+      DATABASE_URL=sua_string_de_conexao_do_supabase_pooler_aqui
+      APP_SHARED_PASSWORD=sua_senha_secreta_para_o_app_aqui
+      NODE_ENV=development
       ```
-    - **Importante:** Certifique-se de que o arquivo `.env` esteja listado no seu `.gitignore` para não ser commitado.
+    - **Importante:** Certifique-se de que o arquivo `.env` esteja listado no seu `.gitignore`.
 
 ## 🏃‍♂️ Executar
 
@@ -58,50 +86,70 @@ Esta variável é fundamental para garantir que os dados da aplicação (partici
 ```bash
 npm run dev
 ```
-(O servidor backend rodará na porta 3001 e o frontend Vite na porta especificada por ele, geralmente 5173)
+A aplicação frontend estará disponível em `http://localhost:5173` (ou outra porta indicada pelo Vite) e o backend em `http://localhost:3001`.
 
-### Produção
+### Build para Produção
 ```bash
 npm run build
+```
+Este comando compila o frontend e o backend TypeScript.
+
+### Iniciar em Modo de Produção (após o build)
+```bash
 npm start
 ```
+Este comando inicia o servidor Node.js que serve a API e o frontend compilado.
 
-## 🌐 Deploy
+## 🌐 Deploy (Exemplo com Render.com)
+Conecte seu repositório Git ao Render.
 
-Ao fazer o deploy para plataformas como Render, Railway, ou DigitalOcean App Platform:
+**Configurações do Serviço Web:**
 
-1.  **Build Command**: `npm run build` (ou conforme necessário pela plataforma)
-2.  **Start Command**: `npm start` (ou conforme necessário pela plataforma)
-3.  **Variáveis de Ambiente Essenciais**:
-    - `NODE_ENV=production`
-    - `DATA_DIRECTORY`: Configure um caminho para armazenamento persistente. Por exemplo, no Render, a configuração em `render.yaml` pode montar um disco em `/opt/render/project/data`, e você definiria `DATA_DIRECTORY` para este caminho.
-    - `APP_SHARED_PASSWORD`: **Defina a senha compartilhada desejada aqui.** Este é crucial para a funcionalidade de login.
-    - `PORT`: A plataforma geralmente define isso, mas se necessário, configure para a porta que seu serviço deve escutar (ex: 3001 ou 10000).
+-   **Build Command**: `npm install && npm run build`
+-   **Start Command**: `npm start`
 
-    **Nota sobre Persistência de Dados**: É vital configurar um disco/volume persistente para o `DATA_DIRECTORY` em sua plataforma de deploy, como ilustrado no exemplo do Render com `render.yaml`. Isso garante que o arquivo `database.sqlite` (localizado dentro do `DATA_DIRECTORY` e contendo todos os dados de participantes, compras e histórico) não seja perdido entre deploys ou reinicializações do serviço. A não configuração correta resultará na perda de todos os dados da aplicação a cada novo deploy ou reinício.
+**Variáveis de Ambiente Essenciais no Render:**
+
+-   `NODE_ENV`: `production`
+-   `DATABASE_URL`: Cole a string de conexão do Supabase Connection Pooler aqui (com sua senha).
+-   `APP_SHARED_PASSWORD`: Defina a senha compartilhada para o login da aplicação.
+-   `PORT`: O Render geralmente define isso automaticamente. Se não, use `10000` ou a porta que o `server/index.ts` está configurado para usar em produção.
+
+**Nota sobre Persistência de Dados**: Com o Supabase, a persistência dos dados é gerenciada externamente, então não é necessário configurar discos persistentes no Render para o banco de dados da aplicação.
 
 ## 📝 Estrutura do Projeto
 ```
-├── client/               # Frontend React
+├── client/               # Frontend React (Vite)
 │   ├── src/
-│   │   ├── components/   # Componentes React
-│   │   ├── contexts/     # React Contexts (ex: AuthContext)
-│   │   ├── hooks/        # Custom hooks
-│   │   ├── pages/        # Componentes de página (ex: LoginPage)
-│   │   └── types/        # TypeScript types
-├── server/               # Backend Express
-│   ├── database/         # Configuração do banco (incluindo connection.ts que inicializa o schema)
-│   └── static-serve.ts   # Servir arquivos estáticos
-├── data/                 # Banco SQLite (inicialmente vazio, `database.sqlite` é criado aqui pelo app)
-└── dist/                 # Build de produção
+│   │   ├── components/
+│   │   ├── contexts/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   └── types/
+├── server/               # Backend Express (Node.js)
+│   ├── database/         # Configuração do Kysely e conexão com o BD
+│   └── index.ts          # Ponto de entrada do servidor Express
+├── dist/                 # Saída do build (frontend e backend transpilado)
+├── .env.example          # Exemplo de arquivo .env (opcional, mas recomendado)
+├── .gitignore
+├── package.json
+├── render.yaml           # Configuração de deploy para Render.com (se utilizada)
+└── tsconfig.json         # Configuração TypeScript principal (geralmente para o client)
+└── tsconfig.server.json  # Configuração TypeScript para o server
 ```
 
 ## 🎯 API Endpoints
+A API segue os padrões REST.
 
 - `POST /api/login` - Autentica o usuário.
   - Body: `{ "password": "string" }`
   - Response (Success): `{ "authenticated": true, "message": "Login successful." }`
   - Response (Failure): 401 Unauthorized `{ "error": "Invalid password." }`
+
+- `GET /api/health` - Verifica a saúde do servidor e a conectividade com o banco de dados.
+  - Response (Success 200): `{ "status": "ok" }`
+  - Response (Failure 503): `{ "status": "error", "message": "Database not ready" }` (Este endpoint foi verificado como existente no código anteriormente)
+
 - `GET /api/participants` - Lista participantes ordenados.
 - `POST /api/participants` - Adiciona novo participante ao final da lista.
   - Body: `{ "name": "string" }`
@@ -109,18 +157,22 @@ Ao fazer o deploy para plataformas como Render, Railway, ou DigitalOcean App Pla
   - Body: `{ "name": "string" }`
 - `PUT /api/participants/reorder` - Reordena a lista de participantes.
   - Body: `{ "participantIds": [number] }` (array de IDs na nova ordem)
-  - Grava as duas últimas reordenações no histórico.
+  - *Side-effect*: Grava as duas últimas reordenações no histórico.
 - `DELETE /api/participants/:id` - Remove participante (se não tiver histórico de compras).
-- `GET /api/purchases` - Lista o histórico de compras.
+
+- `GET /api/purchases` - Lista o histórico de compras (combinando compras de participantes e externas).
 - `POST /api/purchases` - Registra uma nova compra de café.
-  - Body: `{ "participant_id": number }`
+  - Body (Participante): `{ "participant_id": number }`
+  - Body (Externo): `{ "buyer_name": "string" }`
 - `DELETE /api/purchases` - Limpa todo o histórico de compras.
+- `DELETE /api/purchases/:id` - Remove uma compra individual.
+  - Query Params: `type=coffee` ou `type=external`
+
 - `GET /api/next-buyer` - Retorna o próximo participante a comprar café e a última compra.
 - `GET /api/reorder-history` - Retorna as duas últimas reordenações da lista de participantes.
   - (Retorna array vazio `[]` se não houver histórico.)
 
-
 ## 📄 Licença
 
-MIT License
+MIT License.
 ```
