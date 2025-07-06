@@ -1,28 +1,39 @@
-export interface ReorderHistory {
-  id: number; // INTEGER, primary key, auto-incrementing
-  timestamp: string; // TEXT, not null, defaulting to the current timestamp
-  old_order: string; // TEXT (JSON string)
-  new_order: string; // TEXT (JSON string)
+export interface ReorderHistoryTable {
+  id: number; // SERIAL PRIMARY KEY
+  timestamp: Date; // TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  old_order: string; // JSONB
+  new_order: string; // JSONB
 }
 
-export interface ExternalPurchase {
-  id: number;
-  name: string;
-  purchase_date: string;
+export interface ExternalPurchaseTable {
+  id: number; // SERIAL PRIMARY KEY
+  name: string; // VARCHAR(255) NOT NULL
+  purchase_date: Date; // TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 }
 
-export interface DatabaseSchema {
-  participants: {
-    id: number;
-    name: string;
-    created_at: string;
-    order_position: number;
-  };
-  coffee_purchases: {
-    id: number;
-    participant_id: number;
-    purchase_date: string;
-  };
-  reorder_history: ReorderHistory;
-  external_purchases: ExternalPurchase;
+export interface ParticipantsTable {
+  id: number; // SERIAL PRIMARY KEY
+  name: string; // VARCHAR(255) UNIQUE NOT NULL
+  created_at: Date; // TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  order_position: number; // INTEGER NOT NULL
 }
+
+export interface CoffeePurchasesTable {
+  id: number; // SERIAL PRIMARY KEY
+  participant_id: number; // INTEGER REFERENCES participants(id)
+  purchase_date: Date; // TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+}
+
+// Interface agregada para o Kysely
+export interface DB {
+  participants: ParticipantsTable;
+  coffee_purchases: CoffeePurchasesTable;
+  reorder_history: ReorderHistoryTable;
+  external_purchases: ExternalPurchaseTable;
+}
+
+// Removida a interface DatabaseSchema antiga, substituída por DB
+// e interfaces de tabela individuais para melhor clareza com PostgreSQL.
+// Os tipos de dados foram ajustados para refletir os tipos PostgreSQL.
+// Por exemplo, INTEGER auto-incrementing é SERIAL. Datas são TIMESTAMPTZ.
+// JSON é JSONB para melhor performance e funcionalidade.

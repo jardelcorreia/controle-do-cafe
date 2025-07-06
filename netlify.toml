@@ -1,0 +1,32 @@
+[build]
+  command = "npm install && npm run build"
+  publish = "dist/public" # Corrigido com base no vite.config.js
+  functions = "netlify/functions-dist" # Aponta para o diretório de saída das funções compiladas
+
+[dev]
+  command = "npm run dev" # Agora `netlify dev` que usa este toml
+  publish = "dist/public" # Diretório que o `netlify dev` deve servir para o frontend
+  targetPort = 3000 # Porta do frontend (Vite)
+  port = 8888 # Porta que o Netlify Dev CLI vai rodar (acessar localhost:8888)
+  framework = "#static"
+  functions = "netlify/functions-dist" # Diretório das funções para `netlify dev`
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat" # Rota para a função api.ts
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Variáveis de ambiente devem ser configuradas na UI do Netlify
+# ou via `netlify env:set VAR_NAME value`
+# [template.environment] não é uma forma padrão de definir env vars para o build/runtime no netlify.toml diretamente.
+# Elas são mais para "Deploy to Netlify" buttons.
+# Exemplo de como definir para contextos específicos, se necessário:
+# [context.production.environment]
+#   NODE_ENV = "production"
+# [context.deploy-preview.environment]
+#   NODE_ENV = "development"

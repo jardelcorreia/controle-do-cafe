@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json", // Herda configurações do tsconfig.json principal
+  "compilerOptions": {
+    "outDir": "netlify/functions-dist", // Diretório de saída para as funções compiladas
+    "rootDir": "netlify/functions",    // Diretório raiz dos fontes das funções
+    "module": "ESNext",                // Formato do módulo para compatibilidade com Netlify Functions
+    "target": "ESNext",                // Alvo do ECMAScript
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false, // Permite arquivos que não são módulos ES6 (como scripts)
+                             // Pode ser true se todas as suas funções forem módulos ES
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "types": ["node"]                  // Inclui tipos do Node.js
+  },
+  "include": [
+    "netlify/functions/**/*.ts"      // Inclui todos os arquivos .ts em netlify/functions
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "client",
+    "server" // Exclui o diretório do servidor principal se ele tiver seu próprio tsconfig
+  ]
+}

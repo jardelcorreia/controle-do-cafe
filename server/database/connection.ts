@@ -1,32 +1,40 @@
-import { Kysely, PostgresDialect } from "kysely";
-import pg from "pg"; // Import 'pg'
-const { Pool } = pg; // Destructure Pool from 'pg'
-import { DatabaseSchema } from "./schema.js";
-import dotenv from "dotenv";
+import { Kysely, PostgresDialect } from 'kysely';
+import { Pool } from 'pg';
+import { DB } from './schema.js'; // Nome do schema exportado do schema.ts
+import dotenv from 'dotenv';
 
-dotenv.config(); // Carrega variáveis de ambiente do .env se existir (para desenvolvimento local)
+dotenv.config();
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString && process.env.NODE_ENV !== 'test') { // Permite testes sem DB_URL
+  console.error("DATABASE_URL environment variable is not set.");
+  // Considerar lançar erro em produção se não definida
+}
 
 const dialect = new PostgresDialect({
   pool: new Pool({
-    connectionString: process.env.DATABASE_URL, // Usará a connection string do Supabase
-    // Configurações adicionais do pool, se necessário:
-    // max: 10, // Número máximo de conexões no pool
-    // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // Para conexões SSL, comum em produção
+    connectionString: connectionString,
+    // Adicionar configuração SSL para produção se necessário
+    // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
   }),
 });
 
-export const db = new Kysely<DatabaseSchema>({
+export const db = new Kysely<DB>({ // Usar o tipo DB importado
   dialect,
-  log: process.env.NODE_ENV === "development" ? ["query", "error"] : ["error"], // Log queries apenas em desenvolvimento
+  log(event) {
+    if (process.env.NODE_ENV === 'development') {
+      if (event.level === 'query') {
+        console.log(event.query.sql);
+        console.log(event.query.parameters);
+      }
+      if (event.level === 'error') {
+        console.error(event.error);
+      }
+    } else if (event.level === 'error') {
+      console.error(event.error); // Logar erros em produção também
+    }
+  }
 });
 
-console.log("Database connection setup for PostgreSQL.");
-
-// Não precisamos mais de:
-// - Criação de diretório
-// - Caminho de arquivo SQLite
-// - Seed de dados aqui (deve ser feito no Supabase ou via script de migração)
-// - Verificação de schema (ALTER TABLE) aqui (deve ser feito via migrações)
-
-// A função checkConnection foi removida pois causava um erro de build (dialect.pool não é acessível)
-// e não é estritamente necessária. A conexão será testada na primeira query real.
+console.log("Database connection setup for PostgreSQL using Kysely.");
