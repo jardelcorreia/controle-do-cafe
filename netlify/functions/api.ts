@@ -42,9 +42,19 @@ interface DeletePurchaseQuery extends core.Query {
 
 // Login endpoint
 router.post('/login', (req: Request<{}, any, LoginRequestBody>, res: Response) => {
-  // Lógica re-simplificada para teste
-  console.log('Login route hit with body:', req.body);
-  res.status(200).json({ message: 'Login endpoint reached (re-simplified)' });
+  const { password } = req.body;
+  const sharedPassword = process.env.APP_SHARED_PASSWORD;
+
+  if (!sharedPassword) {
+    console.error('APP_SHARED_PASSWORD environment variable is not set.');
+    return res.status(500).json({ error: 'Login system configuration error.' });
+  }
+
+  if (password && password === sharedPassword) {
+    res.json({ authenticated: true, message: 'Login successful.' });
+  } else {
+    res.status(401).json({ error: 'Invalid password.' });
+  }
 });
 
 // Health check endpoint
@@ -418,13 +428,43 @@ router.delete('/purchases', async (req: Request, res: Response) => {
 // Delete individual purchase
 router.delete('/purchases/:id', async (req: Request<DeletePurchaseParams, any, any, DeletePurchaseQuery>, res: Response) => {
   try {
-    const { id } = req.params;
-    const { type } = req.query;
-    console.log(`Simplified DELETE /purchases/:id route hit for id: ${id}, type: ${type}`);
-    res.status(200).json({ message: `Simplified delete for ${id} of type ${type}` });
+    const { id } = req.params; // req.params agora é DeletePurchaseParams
+    const { type } = req.query; // req.query agora é DeletePurchaseQuery
+
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Valid purchase ID is required' });
+    }
+    const purchaseId = parseInt(id);
+
+    if (type !== 'coffee' && type !== 'external') {
+      return res.status(400).json({ error: 'Invalid purchase type specified. Must be "coffee" or "external".' });
+    }
+
+    console.log(`Deleting ${type} purchase with ID:`, purchaseId);
+
+    let result;
+    if (type === 'coffee') {
+      result = await db
+        .deleteFrom('coffee_purchases')
+        .where('id', '=', purchaseId)
+        .executeTakeFirst();
+    } else { // type === 'external'
+      result = await db
+        .deleteFrom('external_purchases')
+        .where('id', '=', purchaseId)
+        .executeTakeFirst();
+    }
+
+    if (result && result.numDeletedRows > 0) {
+      console.log(`${type} purchase ${purchaseId} deleted successfully.`);
+      res.json({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} purchase deleted successfully` });
+    } else {
+      console.log(`${type} purchase ${purchaseId} not found or already deleted.`);
+      res.status(404).json({ error: `${type.charAt(0).toUpperCase() + type.slice(1)} purchase not found` });
+    }
   } catch (error) {
-    console.error('Error in simplified delete:', error);
-    res.status(500).json({ error: 'Failed in simplified delete' });
+    console.error('Error deleting individual purchase:', error);
+    res.status(500).json({ error: 'Failed to delete purchase' });
   }
 });
 
