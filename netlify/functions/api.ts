@@ -533,7 +533,7 @@ router.get('/next-buyer', async (req: Request, res: Response) => {
 
       // ... (demais rotas)
 
-      app.use(router); // Montar o router diretamente
+      app.use('/api', router); // Montar o router no prefixo /api
       return app; // Retornar a instância do app Express
     };
 
