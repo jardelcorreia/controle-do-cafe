@@ -1,27 +1,33 @@
 {
-  "extends": "./tsconfig.json", // Herda configurações do tsconfig.json principal
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "netlify/functions-dist", // Diretório de saída para as funções compiladas
-    "rootDir": "netlify/functions",    // Diretório raiz dos fontes das funções
-    "module": "ESNext",                // Formato do módulo para compatibilidade com Netlify Functions
-    "target": "ESNext",                // Alvo do ECMAScript
+    "outDir": "netlify/functions-dist", // Diretório de saída para tudo compilado por este tsconfig
+    "rootDir": ".", // Definir rootDir como o diretório raiz do projeto para incluir server/database
+    "module": "ESNext",
+    "target": "ESNext",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "isolatedModules": false, // Permite arquivos que não são módulos ES6 (como scripts)
-                             // Pode ser true se todas as suas funções forem módulos ES
+    "isolatedModules": false,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "types": ["node"]                  // Inclui tipos do Node.js
+    "types": ["node"],
+    "baseUrl": ".", // Necessário se usando paths, mas rootDir deve ser suficiente aqui
+    "paths": { // Opcional: para importações mais limpas se necessário, mas tentaremos sem primeiro
+      "@db/*": ["server/database/*"]
+    }
   },
   "include": [
-    "netlify/functions/**/*.ts"      // Inclui todos os arquivos .ts em netlify/functions
+    "netlify/functions/**/*.ts", // Arquivos das funções
+    "server/database/**/*.ts"    // Arquivos do banco de dados
   ],
   "exclude": [
     "node_modules",
-    "dist",
+    "dist",                     // Exclui o diretório dist principal
     "client",
-    "server" // Exclui o diretório do servidor principal se ele tiver seu próprio tsconfig
+    "server/*",               // Exclui outros arquivos em server/
+    "!server/database",         // Mas garante que server/database seja incluído (se "server/*" for muito genérico)
+    "netlify/functions-dist"    // Exclui o próprio diretório de saída
   ]
 }

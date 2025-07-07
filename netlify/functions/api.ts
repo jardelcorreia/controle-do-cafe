@@ -1,8 +1,16 @@
 import express, { Router } from 'express'; // Importar Router explicitamente
 import serverless from 'serverless-http';
 import dotenv from 'dotenv';
-// Ajustar o caminho para a localização correta após o build do server
-import { db } from '../../dist/server/database/connection';
+// Caminho ajustado: `../../server/database/connection`
+// Isso porque `api.ts` está em `netlify/functions/api.ts`
+// e `connection.ts` está em `server/database/connection.ts`.
+// Com `rootDir: "."` no tsconfig.functions.json, a compilação para `netlify/functions-dist`
+// manterá a estrutura:
+// - netlify/functions-dist/netlify/functions/api.js
+// - netlify/functions-dist/server/database/connection.js
+// Portanto, a importação de api.js para connection.js será:
+// `../../server/database/connection.js`
+import { db } from '../../server/database/connection';
 
 // Carrega variáveis de ambiente do .env (útil para desenvolvimento local com netlify dev)
 dotenv.config();
@@ -11,11 +19,15 @@ const app = express();
 // Usar Router do Express diretamente
 const router = Router();
 
+// Middleware para processar JSON deve ser aplicado ao router ou app ANTES das rotas
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Tipos explícitos para Request e Response podem ajudar
+import { Request, Response } from 'express';
+
 // Login endpoint
-router.post('/login', (req, res) => {
+router.post('/login', (req: Request, res: Response) => {
   const { password } = req.body;
   const sharedPassword = process.env.APP_SHARED_PASSWORD;
 
@@ -32,7 +44,7 @@ router.post('/login', (req, res) => {
 });
 
 // Health check endpoint
-router.get('/health', async (req, res) => {
+router.get('/health', async (req: Request, res: Response) => {
   try {
     await db.selectFrom('participants').select('id').limit(1).execute();
     res.status(200).json({ status: 'ok' });
@@ -43,7 +55,7 @@ router.get('/health', async (req, res) => {
 });
 
 // Get all participants
-router.get('/participants', async (req, res) => {
+router.get('/participants', async (req: Request, res: Response) => {
   try {
     console.log('Fetching all participants');
     const participants = await db
@@ -61,7 +73,7 @@ router.get('/participants', async (req, res) => {
 });
 
 // Add new participant
-router.post('/participants', async (req, res) => {
+router.post('/participants', async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
 
@@ -102,7 +114,7 @@ router.post('/participants', async (req, res) => {
 });
 
 // Reorder participants
-router.put('/participants/reorder', async (req, res) => {
+router.put('/participants/reorder', async (req: Request, res: Response) => {
   try {
     const { participantIds } = req.body;
 
@@ -175,7 +187,7 @@ router.put('/participants/reorder', async (req, res) => {
 });
 
 // Update participant
-router.put('/participants/:id', async (req, res) => {
+router.put('/participants/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -212,7 +224,7 @@ router.put('/participants/:id', async (req, res) => {
 });
 
 // Delete participant
-router.delete('/participants/:id', async (req, res) => {
+router.delete('/participants/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -251,7 +263,7 @@ router.delete('/participants/:id', async (req, res) => {
 });
 
 // Get coffee purchase history with participant names
-router.get('/purchases', async (req, res) => {
+router.get('/purchases', async (req: Request, res: Response) => {
   try {
     console.log('Fetching purchase history');
 
@@ -310,7 +322,7 @@ router.get('/purchases', async (req, res) => {
 });
 
 // Get reorder history
-router.get('/reorder-history', async (req, res) => {
+router.get('/reorder-history', async (req: Request, res: Response) => {
   try {
     console.log('Fetching reorder history');
     const history = await db
@@ -328,7 +340,7 @@ router.get('/reorder-history', async (req, res) => {
 });
 
 // Record a coffee purchase
-router.post('/purchases', async (req, res) => {
+router.post('/purchases', async (req: Request, res: Response) => {
   try {
     const { participant_id, buyer_name } = req.body;
     const currentDate = new Date(); // Usar objeto Date diretamente
@@ -367,7 +379,7 @@ router.post('/purchases', async (req, res) => {
 });
 
 // Delete all purchase history
-router.delete('/purchases', async (req, res) => {
+router.delete('/purchases', async (req: Request, res: Response) => {
   try {
     console.log('Deleting all purchase history (regular and external)');
 
@@ -400,10 +412,10 @@ router.delete('/purchases', async (req, res) => {
 });
 
 // Delete individual purchase
-router.delete('/purchases/:id', async (req, res) => {
+router.delete('/purchases/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { type } = req.query; // 'coffee' or 'external'
+    const { type } = req.query as { type: string | undefined }; // Tipagem para req.query.type
 
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ error: 'Valid purchase ID is required' });
@@ -443,7 +455,7 @@ router.delete('/purchases/:id', async (req, res) => {
 });
 
 // Get next person to buy coffee
-router.get('/next-buyer', async (req, res) => {
+router.get('/next-buyer', async (req: Request, res: Response) => {
   try {
     console.log('Calculating next coffee buyer');
 
