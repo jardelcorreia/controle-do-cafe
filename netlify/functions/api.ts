@@ -1,6 +1,7 @@
-import express, { Router } from 'express'; // Importar Router explicitamente
+import express, { Router, Request, Response } from 'express'; // Importar Request, Response aqui
 import serverless from 'serverless-http';
 import dotenv from 'dotenv';
+import * as core from 'express-serve-static-core';
 // Caminho ajustado: `../../server/database/connection`
 // Isso porque `api.ts` está em `netlify/functions/api.ts`
 // e `connection.ts` está em `server/database/connection.ts`.
@@ -24,11 +25,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Tipos explícitos para Request e Response podem ajudar
-import { Request, Response } from 'express'; // Re-adicionando para as outras rotas que não falharam
+// import { Request, Response } from 'express'; // Removido pois Request e Response são importados na linha de cima
+
+// Interfaces para tipagem específica das rotas
+interface LoginRequestBody {
+  password?: string;
+}
+
+interface DeletePurchaseParams extends core.ParamsDictionary {
+  id: string;
+}
+
+interface DeletePurchaseQuery extends core.Query {
+  type?: string;
+}
 
 // Login endpoint
-router.post('/login', (req, res) => { // Tipos inferidos para esta rota específica
-  const { password } = req.body;
+router.post('/login', (req: Request<{}, any, LoginRequestBody>, res: Response) => {
+  const { password } = req.body; // req.body agora é LoginRequestBody
   const sharedPassword = process.env.APP_SHARED_PASSWORD;
 
   if (!sharedPassword) {
@@ -412,10 +426,10 @@ router.delete('/purchases', async (req: Request, res: Response) => {
 });
 
 // Delete individual purchase
-router.delete('/purchases/:id', async (req, res) => { // Tipos inferidos
+router.delete('/purchases/:id', async (req: Request<DeletePurchaseParams, any, any, DeletePurchaseQuery>, res: Response) => {
   try {
-    const { id } = req.params;
-    const { type } = req.query as { type: string | undefined }; // Tipagem para req.query.type
+    const { id } = req.params; // req.params agora é DeletePurchaseParams
+    const { type } = req.query; // req.query agora é DeletePurchaseQuery, a asserção não é mais necessária
 
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ error: 'Valid purchase ID is required' });
