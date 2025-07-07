@@ -24,10 +24,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Tipos explícitos para Request e Response podem ajudar
-import { Request, Response } from 'express';
+import { Request, Response } from 'express'; // Re-adicionando para as outras rotas que não falharam
 
 // Login endpoint
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', (req, res) => { // Tipos inferidos para esta rota específica
   const { password } = req.body;
   const sharedPassword = process.env.APP_SHARED_PASSWORD;
 
@@ -412,7 +412,7 @@ router.delete('/purchases', async (req: Request, res: Response) => {
 });
 
 // Delete individual purchase
-router.delete('/purchases/:id', async (req: Request, res: Response) => {
+router.delete('/purchases/:id', async (req, res) => { // Tipos inferidos
   try {
     const { id } = req.params;
     const { type } = req.query as { type: string | undefined }; // Tipagem para req.query.type
