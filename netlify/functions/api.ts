@@ -42,19 +42,9 @@ interface DeletePurchaseQuery extends core.Query {
 
 // Login endpoint
 router.post('/login', (req: Request<{}, any, LoginRequestBody>, res: Response) => {
-  const { password } = req.body; // req.body agora é LoginRequestBody
-  const sharedPassword = process.env.APP_SHARED_PASSWORD;
-
-  if (!sharedPassword) {
-    console.error('APP_SHARED_PASSWORD environment variable is not set.');
-    return res.status(500).json({ error: 'Login system configuration error.' });
-  }
-
-  if (password && password === sharedPassword) {
-    res.json({ authenticated: true, message: 'Login successful.' });
-  } else {
-    res.status(401).json({ error: 'Invalid password.' });
-  }
+  // Lógica re-simplificada para teste
+  console.log('Login route hit with body:', req.body);
+  res.status(200).json({ message: 'Login endpoint reached (re-simplified)' });
 });
 
 // Health check endpoint
