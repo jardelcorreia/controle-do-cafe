@@ -13,7 +13,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     // "noEmit": true, // Comentado para permitir que tsconfig.functions.json o sobrescreva efetivamente
-    "allowImportingTsExtensions": true, // Mantido aqui, mas será ignorado por tsconfig.functions.json devido à ausência de noEmit
+    // "allowImportingTsExtensions": true, // Comentado para evitar o erro TS5096
     "baseUrl": ".",
     "paths": {
       "@/*": ["./client/src/*"]
