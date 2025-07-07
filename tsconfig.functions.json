@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "noEmit": false, // Sobrescreve o noEmit: true do tsconfig.json base
     "outDir": "./netlify/functions-dist",
     "rootDir": "./netlify/functions", // rootDir correto
     "module": "ESNext",

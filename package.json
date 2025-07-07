@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prebuild:functions": "mkdir -p netlify/functions/database && cp server/database/*.ts netlify/functions/database/",
-    "build:functions": "tsc --project tsconfig.functions.json",
-    "build": "npm run prebuild:functions && vite build && npm run build:functions",
+    "build:functions": "tsc --project tsconfig.functions.json --listEmittedFiles && echo '--- Conteúdo de netlify/functions-dist após tsc ---' && ls -R netlify/functions-dist || echo '*** Erro: tsc falhou ou netlify/functions-dist não foi criado ***'",
+    "build": "npm run prebuild:functions && vite build && mkdir -p netlify/functions-dist && npm run build:functions",
     "start": "node dist/server/index.js",
     "dev": "netlify dev",
     "check": "node --version && npm --version && which node"
