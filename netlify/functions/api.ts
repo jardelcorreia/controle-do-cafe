@@ -11,7 +11,7 @@ import * as core from 'express-serve-static-core';
 // - netlify/functions-dist/server/database/connection.js
 // Portanto, a importação de api.js para connection.js será:
 // `../../server/database/connection.js`
-import { db } from '../../server/database/connection';
+import { db } from './database/connection';
 
 // Carrega variáveis de ambiente do .env (útil para desenvolvimento local com netlify dev)
 dotenv.config();

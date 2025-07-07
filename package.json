@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && tsc --project tsconfig.functions.json",
+    "prebuild:functions": "mkdir -p netlify/functions/database && cp server/database/*.ts netlify/functions/database/",
+    "build:functions": "tsc --project tsconfig.functions.json",
+    "build": "npm run prebuild:functions && vite build && npm run build:functions",
     "start": "node dist/server/index.js",
     "dev": "netlify dev",
     "check": "node --version && npm --version && which node"

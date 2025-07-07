@@ -1,33 +1,33 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "netlify/functions-dist", // Diretório de saída para tudo compilado por este tsconfig
-    "rootDir": ".", // Definir rootDir como o diretório raiz do projeto para incluir server/database
-    "module": "ESNext",
+    // Importante: outDir é relativo ao local do tsconfig.json, ou absoluto.
+    // Para que as funções fiquem em `netlify/functions-dist` como esperado pelo netlify.toml
+    "outDir": "./netlify/functions-dist",
+    // rootDir instrui o tsc sobre a "raiz" dos seus arquivos fonte.
+    // A estrutura de diretórios sob rootDir será replicada em outDir.
+    "rootDir": "./netlify/functions",
+    "module": "ESNext", // Mantido ESNext, Netlify Functions suporta.
     "target": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "node", // ou "NodeNext" se estiver usando apenas ES Modules
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "isolatedModules": false,
+    // "isolatedModules": true, // Pode ser true se todos os arquivos forem módulos ES.
     "resolveJsonModule": true,
     "sourceMap": true,
-    "types": ["node"],
-    "baseUrl": ".", // Necessário se usando paths, mas rootDir deve ser suficiente aqui
-    "paths": { // Opcional: para importações mais limpas se necessário, mas tentaremos sem primeiro
-      "@db/*": ["server/database/*"]
-    }
+    "types": ["node"]
+    // baseUrl e paths não são estritamente necessários com a estratégia de cópia de arquivos.
   },
   "include": [
-    "netlify/functions/**/*.ts", // Arquivos das funções
-    "server/database/**/*.ts"    // Arquivos do banco de dados
+    // Inclui todos os arquivos .ts dentro do rootDir (netlify/functions)
+    // Isso pegará api.ts e o diretório database/* (após a cópia)
+    "**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",                     // Exclui o diretório dist principal
-    "client",
-    "server/*",               // Exclui outros arquivos em server/
-    "!server/database",         // Mas garante que server/database seja incluído (se "server/*" for muito genérico)
-    "netlify/functions-dist"    // Exclui o próprio diretório de saída
+    // Não precisamos excluir "dist" ou "client" aqui porque o rootDir já os escopa.
+    // Excluir o próprio outDir para evitar problemas de compilação recursiva.
+    "../functions-dist" // Relativo ao rootDir "netlify/functions"
   ]
 }
