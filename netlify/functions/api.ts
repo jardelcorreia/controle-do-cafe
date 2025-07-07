@@ -518,8 +518,9 @@ router.get('/next-buyer', async (req: Request, res: Response) => {
   }
 });
 
-// Monta o router na base path '/api' que será usada pela função Netlify
-app.use('/.netlify/functions/api', router); // Caminho base para a função
+// Monta o router na base path '/' que será usada pela função Netlify
+// O Netlify e o `serverless-http` cuidam do prefixo /.netlify/functions/api
+app.use('/', router);
 
 // Exporta o handler para Netlify
 export const handler = serverless(app);
