@@ -12,8 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
+    // "noEmit": true, // Comentado para permitir que tsconfig.functions.json o sobrescreva efetivamente
+    "allowImportingTsExtensions": true, // Mantido aqui, mas será ignorado por tsconfig.functions.json devido à ausência de noEmit
     "baseUrl": ".",
     "paths": {
       "@/*": ["./client/src/*"]
