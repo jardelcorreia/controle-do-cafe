@@ -518,9 +518,11 @@ router.get('/next-buyer', async (req: Request, res: Response) => {
   }
 });
 
-// Monta o router na base path '/' que será usada pela função Netlify
-// O Netlify e o `serverless-http` cuidam do prefixo /.netlify/functions/api
-app.use('/', router);
+// Monta o router no path base.
+// Para Netlify, o path da requisição que chega ao handler do serverless-http
+// já teve o prefixo da função (ex: /.netlify/functions/api) removido.
+// Então, o router do Express deve lidar com caminhos como '/login', '/participants'.
+app.use(router); // Montar o router diretamente, ou em '/'
 
 // Exporta o handler para Netlify
 export const handler = serverless(app);
