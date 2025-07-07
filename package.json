@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && tsc --project tsconfig.server.json && tsc --project tsconfig.functions.json",
+    "build": "vite build && tsc --project tsconfig.functions.json",
     "start": "node dist/server/index.js",
     "dev": "netlify dev",
     "check": "node --version && npm --version && which node"

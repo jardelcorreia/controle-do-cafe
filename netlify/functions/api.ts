@@ -135,7 +135,7 @@ router.put('/participants/reorder', async (req, res) => {
       await db
         .insertInto('reorder_history')
         .values({
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(), // Usar objeto Date diretamente
           old_order: oldOrderJson,
           new_order: newOrderJson,
         })
@@ -272,30 +272,28 @@ router.get('/purchases', async (req, res) => {
       .execute();
 
     const mappedCoffeePurchases = coffeePurchases.map(purchase => {
-      let formattedDate = purchase.purchase_date;
-      if (typeof purchase.purchase_date === 'string' && !purchase.purchase_date.endsWith('Z')) {
-        const dateObject = new Date(purchase.purchase_date + 'Z');
-        formattedDate = dateObject.toISOString();
-      }
+      // Assegurar que purchase_date seja um objeto Date e então converter para ISO string
+      const purchaseDateObject = typeof purchase.purchase_date === 'string'
+        ? new Date(purchase.purchase_date)
+        : purchase.purchase_date;
       return {
         id: purchase.id,
         name: purchase.name,
-        purchase_date: formattedDate,
+        purchase_date: purchaseDateObject.toISOString(), // Enviar como ISO string para o cliente
         participant_id: purchase.participant_id,
         is_external: false,
       };
     });
 
     const mappedExternalPurchases = externalPurchases.map(purchase => {
-      let formattedDate = purchase.purchase_date;
-      if (typeof purchase.purchase_date === 'string' && !purchase.purchase_date.endsWith('Z')) {
-        const dateObject = new Date(purchase.purchase_date + 'Z');
-        formattedDate = dateObject.toISOString();
-      }
+      // Assegurar que purchase_date seja um objeto Date e então converter para ISO string
+      const purchaseDateObject = typeof purchase.purchase_date === 'string'
+        ? new Date(purchase.purchase_date)
+        : purchase.purchase_date;
       return {
         id: purchase.id,
         name: purchase.name,
-        purchase_date: formattedDate,
+        purchase_date: purchaseDateObject.toISOString(), // Enviar como ISO string para o cliente
         is_external: true,
       };
     });
@@ -333,7 +331,7 @@ router.get('/reorder-history', async (req, res) => {
 router.post('/purchases', async (req, res) => {
   try {
     const { participant_id, buyer_name } = req.body;
-    const purchase_date = new Date().toISOString();
+    const currentDate = new Date(); // Usar objeto Date diretamente
 
     if (participant_id) {
       console.log('Recording coffee purchase for participant:', participant_id);
@@ -341,7 +339,7 @@ router.post('/purchases', async (req, res) => {
         .insertInto('coffee_purchases')
         .values({
           participant_id,
-          purchase_date,
+          purchase_date: currentDate, // Usar objeto Date
         })
         .returning(['id', 'participant_id', 'purchase_date'])
         .executeTakeFirst();
@@ -353,7 +351,7 @@ router.post('/purchases', async (req, res) => {
         .insertInto('external_purchases')
         .values({
           name: buyer_name,
-          purchase_date,
+          purchase_date: currentDate, // Usar objeto Date
         })
         .returning(['id', 'name', 'purchase_date'])
         .executeTakeFirst();
