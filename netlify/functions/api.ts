@@ -13,22 +13,35 @@ import * as core from 'express-serve-static-core';
 // `../../server/database/connection.js`
 import { db } from './database/connection';
 
-// Carrega variáveis de ambiente do .env (útil para desenvolvimento local com netlify dev)
-dotenv.config();
+// Interface para o evento da função Netlify (simplificada)
+interface NetlifyEvent {
+  path: string;
+  httpMethod: string;
+  headers: { [key: string]: string | undefined };
+  body: string | null;
+  isBase64Encoded: boolean;
+  queryStringParameters?: { [key: string]: string | undefined };
+}
 
-const app = express();
-// Usar Router do Express diretamente
-const router = Router();
+// Interface para o contexto da função Netlify (simplificada)
+interface NetlifyContext {
+  functionName: string;
+  // ... outras propriedades do contexto
+}
 
-// Middleware para processar JSON deve ser aplicado ao router ou app ANTES das rotas
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const createExpressApp = () => {
+  // Carrega variáveis de ambiente do .env (útil para desenvolvimento local com netlify dev)
+  // Mova dotenv.config() para dentro da função para garantir que seja chamado durante a inicialização da função
+  dotenv.config();
 
-// Tipos explícitos para Request e Response podem ajudar
-// import { Request, Response } from 'express'; // Removido pois Request e Response são importados na linha de cima
+  const app = express();
+  const router = Router();
 
-// Interfaces para tipagem específica das rotas
-interface LoginRequestBody {
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // Interfaces para tipagem específica das rotas
+  interface LoginRequestBody {
   password?: string;
 }
 
@@ -518,11 +531,27 @@ router.get('/next-buyer', async (req: Request, res: Response) => {
   }
 });
 
-// Monta o router no path base.
-// Para Netlify, o path da requisição que chega ao handler do serverless-http
-// já teve o prefixo da função (ex: /.netlify/functions/api) removido.
-// Então, o router do Express deve lidar com caminhos como '/login', '/participants'.
-app.use(router); // Montar o router diretamente, ou em '/'
+      // ... (demais rotas)
 
-// Exporta o handler para Netlify
-export const handler = serverless(app);
+      app.use(router); // Montar o router diretamente
+      return app; // Retornar a instância do app Express
+    };
+
+    // Handler principal da função Netlify
+    const serverlessHandler = serverless(createExpressApp());
+
+    export const handler = async (event: NetlifyEvent, context: NetlifyContext) => {
+      console.log("--- RAW NETLIFY EVENT ---");
+      console.log(JSON.stringify(event, null, 2));
+      console.log("--- NETLIFY CONTEXT ---");
+      console.log(JSON.stringify(context, null, 2));
+
+      // Adicionar log para o path que o serverless-http provavelmente usará
+      if (event.requestContext && event.requestContext.http && event.requestContext.http.path) {
+        console.log("Path for serverless-http (from event.requestContext.http.path):", event.requestContext.http.path);
+      } else {
+        console.log("Path for serverless-http (from event.path):", event.path);
+      }
+
+      return serverlessHandler(event, context);
+    };
