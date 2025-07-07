@@ -16,8 +16,9 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
 ## 🛠️ Tecnologias
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Router DOM
-- **Backend**: Node.js, Express 5, TypeScript
+- **Backend**: Node.js, Express 4, TypeScript, `serverless-http` para compatibilidade com Netlify Functions.
 - **Database**: PostgreSQL (via Supabase) com Kysely ORM
+- **Plataforma de Deploy**: Netlify
 
 ## 📦 Instalação e Configuração
 
@@ -76,101 +77,101 @@ Sistema para controlar a rotação de compra de café entre participantes, com f
       ```env
       DATABASE_URL=sua_string_de_conexao_do_supabase_pooler_aqui
       APP_SHARED_PASSWORD=sua_senha_secreta_para_o_app_aqui
-      NODE_ENV=development
+      # NODE_ENV=development (Netlify CLI geralmente define isso ou similar para 'dev')
       ```
     - **Importante:** Certifique-se de que o arquivo `.env` esteja listado no seu `.gitignore`.
 
 ## 🏃‍♂️ Executar
 
-### Desenvolvimento
+### Desenvolvimento Local com Netlify CLI
+Para simular o ambiente Netlify localmente, incluindo as Netlify Functions:
 ```bash
 npm run dev
 ```
-A aplicação frontend estará disponível em `http://localhost:5173` (ou outra porta indicada pelo Vite) e o backend em `http://localhost:3001`.
+Este comando utiliza a Netlify CLI. O frontend (Vite) geralmente roda em uma porta (ex: 3000 ou 5173) e a CLI do Netlify provê um proxy para ele e para as funções em outra porta (geralmente 8888). Acesse a aplicação pela porta indicada pela Netlify CLI.
 
 ### Build para Produção
 ```bash
 npm run build
 ```
-Este comando compila o frontend e o backend TypeScript.
+Este comando executa os seguintes passos:
+1.  `npm run prebuild:functions`: Copia os arquivos de `server/database/` para `netlify/functions/database/`.
+2.  `vite build`: Compila o frontend para o diretório `dist/public/`.
+3.  `mkdir -p netlify/functions-dist`: Garante que o diretório de saída das funções exista.
+4.  `npm run build:functions`: Compila as Netlify Functions de `netlify/functions/` para `netlify/functions-dist/` usando `tsc --project tsconfig.functions.json`.
 
-### Iniciar em Modo de Produção (após o build)
-```bash
-npm start
+## 🌐 Deploy no Netlify
+
+1.  **Conecte seu Repositório Git ao Netlify:**
+    *   Vá ao painel do Netlify e crie um "New site from Git".
+    *   Escolha seu provedor Git e selecione o repositório `controle-do-cafe`.
+
+2.  **Configurações de Build:**
+    *   O Netlify deve detectar automaticamente o arquivo `netlify.toml` e usar as configurações definidas nele.
+    *   **Build Command**: `npm run build` (ou `npm install && npm run build` - o `npm install` é geralmente executado por padrão pelo Netlify).
+    *   **Publish directory**: `dist/public`
+    *   **Functions directory**: `netlify/functions-dist`
+
+3.  **Variáveis de Ambiente Essenciais no Netlify:**
+    *   Vá para "Site configuration" > "Build & deploy" > "Environment variables".
+    *   Adicione as seguintes variáveis:
+        *   `DATABASE_URL`: Cole a string de conexão do Supabase Connection Pooler aqui (com sua senha).
+        *   `APP_SHARED_PASSWORD`: Defina a senha compartilhada para o login da aplicação.
+        *   `NODE_ENV`: `production` (O Netlify geralmente define isso automaticamente para deploys de produção, mas é bom garantir).
+
+4.  **Deploy:**
+    *   Após configurar, acione um deploy (geralmente acontece automaticamente após um push para a branch configurada, ou você pode acionar manualmente na UI do Netlify).
+
+## 📝 Estrutura do Projeto (Atualizada para Netlify)
 ```
-Este comando inicia o servidor Node.js que serve a API e o frontend compilado.
-
-## 🌐 Deploy (Exemplo com Render.com)
-Conecte seu repositório Git ao Render.
-
-**Configurações do Serviço Web:**
-
--   **Build Command**: `npm install && npm run build`
--   **Start Command**: `npm start`
-
-**Variáveis de Ambiente Essenciais no Render:**
-
--   `NODE_ENV`: `production`
--   `DATABASE_URL`: Cole a string de conexão do Supabase Connection Pooler aqui (com sua senha).
--   `APP_SHARED_PASSWORD`: Defina a senha compartilhada para o login da aplicação.
--   `PORT`: O Render geralmente define isso automaticamente. Se não, use `10000` ou a porta que o `server/index.ts` está configurado para usar em produção.
-
-**Nota sobre Persistência de Dados**: Com o Supabase, a persistência dos dados é gerenciada externamente, então não é necessário configurar discos persistentes no Render para o banco de dados da aplicação.
-
-## 📝 Estrutura do Projeto
-```
-├── client/               # Frontend React (Vite)
+├── client/                     # Frontend React (Vite)
 │   ├── src/
 │   │   ├── components/
 │   │   ├── contexts/
 │   │   ├── hooks/
 │   │   ├── pages/
 │   │   └── types/
-├── server/               # Backend Express (Node.js)
-│   ├── database/         # Configuração do Kysely e conexão com o BD
-│   └── index.ts          # Ponto de entrada do servidor Express
-├── dist/                 # Saída do build (frontend e backend transpilado)
-├── .env.example          # Exemplo de arquivo .env (opcional, mas recomendado)
+├── netlify/
+│   ├── functions/              # Código fonte das Netlify Functions (TypeScript)
+│   │   ├── database/           # Arquivos de DB copiados aqui antes da compilação das funções
+│   │   └── api.ts              # Função principal que lida com todas as rotas /api/*
+│   └── functions-dist/         # Saída da compilação das Netlify Functions (JavaScript) - Gerado pelo build
+├── server/                     # Código original do backend (agora usado como fonte para a função)
+│   └── database/               # Configuração do Kysely e schema (copiado para netlify/functions/database)
+├── dist/                       # Saída do build do frontend (Vite)
+│   └── public/
+├── .env.example                # Exemplo de arquivo .env
 ├── .gitignore
+├── netlify.toml                # Configuração de deploy e redirecionamentos para Netlify
 ├── package.json
-├── render.yaml           # Configuração de deploy para Render.com (se utilizada)
-└── tsconfig.json         # Configuração TypeScript principal (geralmente para o client)
-└── tsconfig.server.json  # Configuração TypeScript para o server
+├── tsconfig.json               # Configuração TypeScript principal
+├── tsconfig.functions.json     # Configuração TypeScript para as Netlify Functions
+└── vite.config.js              # Configuração do Vite
 ```
 
 ## 🎯 API Endpoints
-A API segue os padrões REST.
+A API é servida através de uma única Netlify Function (`api`) e as rotas são gerenciadas internamente pelo Express. O acesso via frontend é feito através de `/api/*`.
 
 - `POST /api/login` - Autentica o usuário.
   - Body: `{ "password": "string" }`
-  - Response (Success): `{ "authenticated": true, "message": "Login successful." }`
-  - Response (Failure): 401 Unauthorized `{ "error": "Invalid password." }`
-
-- `GET /api/health` - Verifica a saúde do servidor e a conectividade com o banco de dados.
-  - Response (Success 200): `{ "status": "ok" }`
-  - Response (Failure 503): `{ "status": "error", "message": "Database not ready" }` (Este endpoint foi verificado como existente no código anteriormente)
-
-- `GET /api/participants` - Lista participantes ordenados.
-- `POST /api/participants` - Adiciona novo participante ao final da lista.
+- `GET /api/health` - Verifica a saúde da função e conectividade com o banco.
+- `GET /api/participants` - Lista participantes.
+- `POST /api/participants` - Adiciona participante.
   - Body: `{ "name": "string" }`
-- `PUT /api/participants/:id` - Atualiza nome de um participante.
+- `PUT /api/participants/:id` - Atualiza participante.
   - Body: `{ "name": "string" }`
-- `PUT /api/participants/reorder` - Reordena a lista de participantes.
-  - Body: `{ "participantIds": [number] }` (array de IDs na nova ordem)
-  - *Side-effect*: Grava as duas últimas reordenações no histórico.
-- `DELETE /api/participants/:id` - Remove participante (se não tiver histórico de compras).
-
-- `GET /api/purchases` - Lista o histórico de compras (combinando compras de participantes e externas).
-- `POST /api/purchases` - Registra uma nova compra de café.
+- `PUT /api/participants/reorder` - Reordena participantes.
+  - Body: `{ "participantIds": [number] }`
+- `DELETE /api/participants/:id` - Remove participante.
+- `GET /api/purchases` - Lista histórico de compras.
+- `POST /api/purchases` - Registra compra.
   - Body (Participante): `{ "participant_id": number }`
   - Body (Externo): `{ "buyer_name": "string" }`
-- `DELETE /api/purchases` - Limpa todo o histórico de compras.
-- `DELETE /api/purchases/:id` - Remove uma compra individual.
+- `DELETE /api/purchases` - Limpa histórico de compras.
+- `DELETE /api/purchases/:id` - Remove compra individual.
   - Query Params: `type=coffee` ou `type=external`
-
-- `GET /api/next-buyer` - Retorna o próximo participante a comprar café e a última compra.
-- `GET /api/reorder-history` - Retorna as duas últimas reordenações da lista de participantes.
-  - (Retorna array vazio `[]` se não houver histórico.)
+- `GET /api/next-buyer` - Próximo comprador.
+- `GET /api/reorder-history` - Histórico de reordenações.
 
 ## 📄 Licença
 
