@@ -1,33 +1,32 @@
 {
+{
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    // Importante: outDir é relativo ao local do tsconfig.json, ou absoluto.
-    // Para que as funções fiquem em `netlify/functions-dist` como esperado pelo netlify.toml
     "outDir": "./netlify/functions-dist",
-    // rootDir instrui o tsc sobre a "raiz" dos seus arquivos fonte.
-    // A estrutura de diretórios sob rootDir será replicada em outDir.
-    "rootDir": "./netlify/functions",
-    "module": "ESNext", // Mantido ESNext, Netlify Functions suporta.
+    "rootDir": "./netlify/functions", // rootDir correto
+    "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "node", // ou "NodeNext" se estiver usando apenas ES Modules
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    // "isolatedModules": true, // Pode ser true se todos os arquivos forem módulos ES.
     "resolveJsonModule": true,
     "sourceMap": true,
     "types": ["node"]
-    // baseUrl e paths não são estritamente necessários com a estratégia de cópia de arquivos.
   },
   "include": [
-    // Inclui todos os arquivos .ts dentro do rootDir (netlify/functions)
-    // Isso pegará api.ts e o diretório database/* (após a cópia)
-    "**/*.ts"
+    // Estes caminhos são relativos ao local do tsconfig.functions.json (raiz do projeto)
+    // mas serão interpretados em conjunto com rootDir.
+    // Para ser mais seguro e explícito, referenciamos os arquivos dentro do que será o rootDir.
+    "netlify/functions/api.ts",
+    "netlify/functions/database/connection.ts",
+    "netlify/functions/database/schema.ts"
   ],
   "exclude": [
     "node_modules",
-    // Não precisamos excluir "dist" ou "client" aqui porque o rootDir já os escopa.
-    // Excluir o próprio outDir para evitar problemas de compilação recursiva.
-    "../functions-dist" // Relativo ao rootDir "netlify/functions"
+    "dist", // Exclui o dist do vite
+    "client",
+    "server", // Exclui o diretório server original, já que copiamos o necessário
+    "netlify/functions-dist" // Exclui o próprio diretório de saída das funções
   ]
 }
