@@ -136,9 +136,9 @@ export function PurchaseHistory({
                             <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                           )}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-blue-500 rounded-full text-white text-xs font-bold">
-                          {dateInfo.relative}
-                        </div>
+                        //<div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-blue-500 rounded-full text-white text-xs font-bold">
+                          //{dateInfo.relative}
+                        //</div>
                       </div>
 
                       <div className="flex-1 min-w-0">
