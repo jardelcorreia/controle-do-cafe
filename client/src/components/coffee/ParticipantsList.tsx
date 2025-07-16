@@ -2,14 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Plus, Info, History, Save, X } from 'lucide-react'; // Added Save, X
+import { Users, Plus, Info, Save, X, UserPlus, ListOrdered } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ReorderHistoryDialog } from './ReorderHistoryDialog';
-// Removed DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors from '@dnd-kit/core'
-// Removed arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy from '@dnd-kit/sortable'
-// Removed restrictToVerticalAxis from '@dnd-kit/modifiers'
 import { Participant } from '@/types/coffee';
-import { ParticipantItem } from './ParticipantItem'; // Changed from SortableParticipantItem
+import { ParticipantItem } from './ParticipantItem';
+import { Badge } from '@/components/ui/badge';
 
 interface ParticipantsListProps {
   participants: Participant[];
@@ -26,18 +24,15 @@ export function ParticipantsList({
   onUpdateParticipant,
   onReorderParticipants,
   onDeleteParticipant,
-  loading
 }: ParticipantsListProps) {
   const [newParticipantName, setNewParticipantName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [stagedParticipants, setStagedParticipants] = useState<Participant[]>(participants);
-  const [isConfirmingOrder, setIsConfirmingOrder] = useState(false); // New state for loading
+  const [isConfirmingOrder, setIsConfirmingOrder] = useState(false);
 
   useEffect(() => {
     setStagedParticipants(participants);
   }, [participants]);
-  
-  // Removed sensors constant and useSensors call
 
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
@@ -59,30 +54,18 @@ export function ParticipantsList({
     }
   };
 
-  // Removed handleDragEnd function
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    const newParticipantsArray = [...stagedParticipants];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
 
-  const handleMoveUp = (participantId: number) => { // Removed async
-    const index = stagedParticipants.findIndex(p => p.id === participantId);
-    if (index > 0) { // Can't move up if already at the top
-      const newParticipantsArray = [...stagedParticipants];
-      const temp = newParticipantsArray[index];
-      newParticipantsArray[index] = newParticipantsArray[index - 1];
-      newParticipantsArray[index - 1] = temp;
-      setStagedParticipants(newParticipantsArray);
-      // Removed onReorderParticipants call
+    if (targetIndex < 0 || targetIndex >= newParticipantsArray.length) {
+      return;
     }
-  };
 
-  const handleMoveDown = (participantId: number) => { // Removed async
-    const index = stagedParticipants.findIndex(p => p.id === participantId);
-    if (index < stagedParticipants.length - 1 && index !== -1) { // Can't move down if already at the bottom or not found
-      const newParticipantsArray = [...stagedParticipants];
-      const temp = newParticipantsArray[index];
-      newParticipantsArray[index] = newParticipantsArray[index + 1];
-      newParticipantsArray[index + 1] = temp;
-      setStagedParticipants(newParticipantsArray);
-      // Removed onReorderParticipants call
-    }
+    const temp = newParticipantsArray[index];
+    newParticipantsArray[index] = newParticipantsArray[targetIndex];
+    newParticipantsArray[targetIndex] = temp;
+    setStagedParticipants(newParticipantsArray);
   };
 
   const handleConfirmReorder = async () => {
@@ -90,10 +73,8 @@ export function ParticipantsList({
     try {
       const participantIds = stagedParticipants.map(p => p.id);
       await onReorderParticipants(participantIds);
-      // successful reorder will trigger useEffect to update stagedParticipants via props
     } catch (error) {
       console.error('Error confirming reorder:', error);
-      // Optionally, show an error message to the user
     } finally {
       setIsConfirmingOrder(false);
     }
@@ -108,93 +89,126 @@ export function ParticipantsList({
   const hasStagedChanges = originalOrderIds !== stagedOrderIds;
 
   return (
-    <Card className="card-coffee-accent">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-            <Users className="h-5 w-5" />
-            Participantes ({stagedParticipants.length}) {/* Use stagedParticipants length */}
+    <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50">
+      <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
+      <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-200/10 dark:bg-orange-800/10 rounded-full translate-y-16 translate-x-16" />
+
+      <CardHeader className="relative">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-3 text-amber-800 dark:text-amber-200">
+            <div className="p-3 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 rounded-full shadow-md">
+              <Users className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <span className="text-lg font-semibold">Participantes</span>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  {stagedParticipants.length} {stagedParticipants.length === 1 ? 'pessoa' : 'pessoas'}
+                </Badge>
+              </div>
+            </div>
           </CardTitle>
-          <ReorderHistoryDialog participants={participants} /> {/* Still uses original participants */}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-          <Info className="h-4 w-4" />
-          <span>Use as setas para reordenar a sequência de compra</span> {/* Updated text */}
+          <ReorderHistoryDialog participants={participants} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="participant-name">Adicionar novo participante</Label>
+
+      <CardContent className="relative space-y-6">
+        <div className="p-4 bg-white/30 dark:bg-black/10 rounded-xl backdrop-blur-sm border border-amber-200/30 dark:border-amber-800/30">
+          <Label htmlFor="participant-name" className="flex items-center gap-2 mb-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+            <UserPlus className="h-4 w-4" />
+            Adicionar à lista
+          </Label>
           <div className="flex gap-2">
             <Input
               id="participant-name"
               value={newParticipantName}
               onChange={(e) => setNewParticipantName(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Nome do participante"
+              placeholder="Nome do novo participante"
               disabled={isAdding}
+              className="bg-white/50 dark:bg-black/20 focus:bg-white dark:focus:bg-black/30"
             />
             <Button 
               onClick={handleAddParticipant}
               disabled={isAdding || !newParticipantName.trim()}
               size="icon"
-              className="bg-amber-700 hover:bg-amber-800 text-white"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md hover:shadow-lg transition-all duration-200 shrink-0"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5" />
             </Button>
           </div>
         </div>
 
-        {stagedParticipants.length > 0 ? ( // Use stagedParticipants
-          <div className="space-y-2">
-            <Label>Lista de participantes (ordem de compra)</Label>
-            {/* Removed DndContext and SortableContext wrappers */}
-            <div className="grid gap-2">
-              {stagedParticipants.map((participant, index) => ( // Use stagedParticipants, Added index for isFirst/isLast
-                <ParticipantItem // Changed from SortableParticipantItem
+        {stagedParticipants.length > 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+              <ListOrdered className="h-4 w-4" />
+              <span>Ordem de compra (arraste para reordenar)</span>
+            </div>
+            <div className="space-y-2">
+              {stagedParticipants.map((participant, index) => (
+                <ParticipantItem
                   key={participant.id}
                   participant={participant}
                   onUpdate={onUpdateParticipant}
                   onDelete={onDeleteParticipant}
-                  onMoveUp={handleMoveUp} // Added prop
-                  onMoveDown={handleMoveDown} // Added prop
-                  isFirst={index === 0} // Added prop
-                  isLast={index === stagedParticipants.length - 1} // Use stagedParticipants length
+                  onMoveUp={() => handleMove(index, 'up')}
+                  onMoveDown={() => handleMove(index, 'down')}
+                  isFirst={index === 0}
+                  isLast={index === stagedParticipants.length - 1}
                 />
               ))}
             </div>
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-4">
-            Nenhum participante cadastrado
-          </p>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center">
+              <Users className="h-8 w-8 text-amber-400" />
+            </div>
+            <p className="text-amber-700 dark:text-amber-300 font-medium">
+              Nenhum participante cadastrado
+            </p>
+            <p className="text-amber-600 dark:text-amber-400 text-sm mt-1">
+              Adicione pessoas para começar a usar.
+            </p>
+          </div>
         )}
+
         {hasStagedChanges && (
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-amber-200/50 dark:border-amber-800/50">
             <Button
-              variant="outline"
-              onClick={handleCancelReorder} // Assign handler
-              size="sm"
-              disabled={isConfirmingOrder} // Add disabled state
+              variant="ghost"
+              onClick={handleCancelReorder}
+              disabled={isConfirmingOrder}
+              className="text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50"
             >
               <X className="mr-2 h-4 w-4" />
               Cancelar
             </Button>
             <Button
-              onClick={handleConfirmReorder} // Assign handler
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white min-w-[150px]" // Added min-width for consistent size
-              disabled={isConfirmingOrder} // Add disabled state
+              onClick={handleConfirmReorder}
+              disabled={isConfirmingOrder}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md hover:shadow-lg transition-all"
             >
               {isConfirmingOrder ? (
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" role="status" aria-label="loading"></span>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Salvando...
+                </div>
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Salvar Ordem
+                </div>
               )}
-              {isConfirmingOrder ? 'Salvando...' : 'Confirmar Ordem'}
             </Button>
           </div>
         )}
+
+        <div className="flex items-center gap-2 text-xs text-amber-600/80 dark:text-amber-400/80 mt-4 p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
+          <Info className="h-3 w-3 shrink-0" />
+          <span>A ordem dos participantes define quem será o próximo a comprar café.</span>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,51 +1,42 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'; // Changed from drawer to dialog
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { History } from 'lucide-react'; // Added History import
-
-interface Participant {
-  id: number;
-  name: string;
-}
+import { History, ArrowRight, AlertCircle, Clock } from 'lucide-react';
+import { Participant } from '@/types/coffee';
+import { Badge } from '@/components/ui/badge';
 
 interface ReorderHistoryEntry {
   id: number;
   timestamp: string;
-  old_order: string; // JSON string of participant IDs
-  new_order: string; // JSON string of participant IDs
+  old_order: string;
+  new_order: string;
 }
 
-interface ReorderHistoryDialogProps { // Renamed from ReorderHistoryDrawerProps
-  participants: Participant[]; // To map IDs to names
-  // children: ReactNode; // Removed children
+interface ReorderHistoryDialogProps {
+  participants: Participant[];
 }
 
-const mapIdsToNames = (idsJsonString: string, participants: Participant[]): string => {
+const mapIdsToNames = (idsJsonString: string, participants: Participant[]): { id: number, name: string }[] => {
   try {
     const ids = JSON.parse(idsJsonString) as number[];
-    if (!Array.isArray(ids)) return 'Formato de ordem inválido';
-
+    if (!Array.isArray(ids)) return [];
     const participantMap = new Map(participants.map(p => [p.id, p.name]));
-    return ids.map(id => participantMap.get(id) || `ID: ${id}`).join(', ');
+    return ids.map(id => ({ id, name: participantMap.get(id) || `ID ${id}` }));
   } catch (e) {
-    console.error('Error parsing order JSON:', e);
-    return 'Erro ao processar ordem';
+    return [];
   }
 };
 
-export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps) { // Removed children, Renamed function and prop type
+export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<ReorderHistoryEntry[]>([]);
-  // Note: isLoading and setError states are correctly defined below this in the actual file
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,11 +53,7 @@ export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps
           const data = await response.json();
           setHistory(data);
         } catch (err) {
-          if (err instanceof Error) {
-            setError(err.message);
-          } else {
-            setError('Ocorreu um erro desconhecido');
-          }
+          setError(err instanceof Error ? err.message : 'Ocorreu um erro desconhecido');
         } finally {
           setIsLoading(false);
         }
@@ -77,47 +64,79 @@ export function ReorderHistoryDialog({ participants }: ReorderHistoryDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger>
-        <History className="h-5 w-5 text-amber-800 dark:text-amber-200" />
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50">
+          <History className="h-5 w-5" />
+          <span className="sr-only">Ver histórico de reordenação</span>
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[80vh] sm:max-w-[600px]"> {/* Adjusted width for dialog */}
+      <DialogContent className="sm:max-w-2xl bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/50 border-0">
         <DialogHeader>
-          <DialogTitle>Histórico de Reordenação</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="flex items-center gap-3 text-slate-800 dark:text-slate-200">
+            <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full shadow-md">
+              <History className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            Histórico de Reordenação
+          </DialogTitle>
+          <DialogDescription className="text-slate-600 dark:text-slate-400">
             Veja as alterações anteriores na ordem dos participantes.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-4 overflow-y-auto"> {/* This div handles the scrolling content */}
-          {isLoading && <p>Carregando histórico...</p>}
-          {error && <p className="text-red-500">Erro: {error}</p>}
+
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
+          {isLoading && <p className="text-center text-slate-600 dark:text-slate-400">Carregando histórico...</p>}
+          {error && (
+            <div className="flex flex-col items-center justify-center text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
+              <AlertCircle className="h-8 w-8 mb-2" />
+              <p className="font-semibold">Erro ao carregar</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
           {!isLoading && !error && history.length === 0 && (
-            <p>Nenhum histórico de reordenação encontrado.</p>
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                <History className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 font-medium">
+                Nenhum histórico encontrado
+              </p>
+              <p className="text-slate-500 dark:text-slate-500 text-sm mt-1">
+                As mudanças na ordem aparecerão aqui.
+              </p>
+            </div>
           )}
           {!isLoading && !error && history.length > 0 && (
-            <ul className="space-y-4">
+            <div className="space-y-4">
               {history.map((entry) => (
-                <li key={entry.id} className="p-3 border rounded-md bg-slate-50 dark:bg-slate-800">
-                  <p className="text-sm font-medium">
-                    Data: {new Date(entry.timestamp).toLocaleDateString()} {new Date(entry.timestamp).toLocaleTimeString()}
-                  </p>
-                  <div className="mt-1">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Ordem Anterior:</p>
-                    <p className="text-sm">{mapIdsToNames(entry.old_order, participants)}</p>
+                <div key={entry.id} className="bg-white/50 dark:bg-black/20 rounded-xl border border-slate-200/50 dark:border-slate-800/50 p-4">
+                  <div className="flex items-center gap-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                    <Clock className="h-4 w-4"/>
+                    <span>{new Date(entry.timestamp).toLocaleString('pt-BR')}</span>
                   </div>
-                  <div className="mt-1">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Nova Ordem:</p>
-                    <p className="text-sm">{mapIdsToNames(entry.new_order, participants)}</p>
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DE</p>
+                      <div className="flex flex-wrap gap-1">
+                        {mapIdsToNames(entry.old_order, participants).map(p => (
+                          <Badge key={p.id} variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{p.name}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-green-500 dark:text-green-400 uppercase tracking-wider">PARA</p>
+                      <div className="flex flex-wrap gap-1">
+                        {mapIdsToNames(entry.new_order, participants).map(p => (
+                          <Badge key={p.id} className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{p.name}</Badge>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
-        <DialogFooter>
-          <DialogClose>
-            Fechar
-          </DialogClose>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
